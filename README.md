@@ -47,6 +47,7 @@ Needs Blender 5.1 (paths below are for macOS). From `blender/`:
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b --python build_foresteria.py                      # empty hall -> foresteria.blend
 FURNITURE=1 $B -b --python build_foresteria.py          # with the furniture from the photos -> foresteria_furnished.blend
+WINDOW_HEADS=arched $B -b --python build_foresteria.py  # hypothesis: original arched window heads -> foresteria_arched.blend
 $B -b foresteria.blend --python render_hero.py -- final F          # 3840x2160 still, about 11 min on an Apple-silicon Mac
 $B -b foresteria_furnished.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3
 $B -b --python compare.py                               # needs the three photos next to this README
@@ -67,7 +68,8 @@ $B foresteria.blend --python walk.py                    # WASD + mouse, Shift fa
 - Ribs spring higher on the side walls than on the columns, from small corbels, as measured on the photos.
 - Pointed brick rib vault with round diagonal ribs, brick soffits with white lime joints, plastered sides and
   cells, and a rosette keystone in each bay.
-- Pale lime-plastered walls with splayed arched windows and stone sill steps, oculi in the end walls, two
+- Pale lime-plastered walls with deep, splayed, flat-lintel window recesses and stone steps up to narrow
+  round-headed lights (as today; an arched-head hypothesis is a build switch), oculi in the end walls, two
   doorways in the right wall (one with a plank door).
 - Herringbone floor of about 7,800 individual worn cotto bricks.
 - Each material has its own procedural weathering (Perlin and Voronoi noise): flaking wall plaster, stained and

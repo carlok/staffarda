@@ -7,7 +7,7 @@ from what the photos show, then cameras are placed where the photos were taken s
 
 | File | What |
 |---|---|
-| `build_foresteria.py` | Builds the whole scene, saves `foresteria.blend` (empty room). With `FURNITURE=1` it saves `foresteria_furnished.blend` instead, with the chairs, tables and extinguishers from the photos. All dimensions are parameters at the top. |
+| `build_foresteria.py` | Builds the whole scene, saves `foresteria.blend` (empty room). With `FURNITURE=1` it saves `foresteria_furnished.blend` instead, with the chairs, tables and extinguishers from the photos; with `WINDOW_HEADS=arched` it saves `foresteria_arched.blend`, the arched-window hypothesis. All dimensions are parameters at the top. |
 | `render.py` | `Blender -b foresteria.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3 cam_overview` (`draft` for a ~10 s preview) |
 | `compare.py` | Writes photo-vs-render side-by-sides to `compare/` |
 | `structural_check.py` | Thrust-line check of the vault and its supports; reads its dimensions straight from `build_foresteria.py`. Output in `structural_report.txt`. |
@@ -22,6 +22,7 @@ Rebuild and re-render:
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b --python build_foresteria.py                  # empty room -> foresteria.blend
 FURNITURE=1 $B -b --python build_foresteria.py      # with furniture -> foresteria_furnished.blend
+WINDOW_HEADS=arched $B -b --python build_foresteria.py   # hypothesis: arched window heads -> foresteria_arched.blend
 $B -b foresteria_furnished.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3
 $B -b foresteria.blend --python render.py -- final cam_overview
 $B -b --python compare.py
@@ -53,10 +54,16 @@ python3 structural_check.py > structural_report.txt
   white lime joints. The square-section arches are brick only on the soffit; above the springer blocks their
   sides are plastered like the cells, which gives the light/red banding seen in the photos. Lower down, where
   the ribs gather above the capitals, the sides stay brick.
-- Walls with splayed arched windows (left wall, one per bay) and small lunette windows, an arched window
-  plus an oculus per nave in each end wall, two doorways in the right wall near the far end. Window sizes are
-  `WIN_SIDE` / `WIN_END`. Each arched window has three stone steps rising toward the glass (`window_steps()`),
-  as in photo 1; the real steps are shallower than these 15 cm ones.
+- Large windows (left wall, one per bay; one per nave in each end wall), as they are today and measured on
+  photo 1 with the calibrated camera (`WIN`): a deep, strongly splayed rectangular recess (1.10 m wide at the
+  face, 0.64 m at the back, 0.80 m deep) under a flat lintel at 3.52 m, its sill at 1.48 m, four pale stone steps
+  (8 cm risers) rising to a narrow round-headed light (0.50 m wide, 1.80-3.33 m) with iron glazing bars. The
+  reveals are clean lime plaster, without the wall's flaking. Plus small rectangular windows high in the left
+  wall's lunettes, an oculus per nave in the end walls, and two doorways in the right wall near the far end.
+- **Hypothesis, not in the photos:** `WINDOW_HEADS=arched` builds the recesses with a round rere-arch instead of
+  the lintel (crown 0.20 m above today's soffit), saved as `foresteria_arched.blend`. A flat lintel across a 1.1 m
+  splay in a 13th-15th century vaulted hall looks like a later alteration, and an arched head would be the usual
+  original form; I found no source on these windows, so this is a reading of the forms, not documented history.
 - Brick floor laid in 90-degree herringbone, as in photos 1 and 2: 7,771 real bricks of 28 x 14 cm
   (`floor_bricks()`, `FLOOR_BRICK_W`) with worn chamfered edges, small random twist, tilt and size, over a
   dusty mortar bed (the `floor` object). Each brick carries two random attributes that pick its tone, from

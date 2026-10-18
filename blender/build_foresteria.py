@@ -48,9 +48,16 @@ LOSS_T = 0.535                 # plaster-loss threshold = nq(0.72): about 28 % o
 UPLIGHT_W = 120              # watts per uplight (two per capital): vault about as bright as the walls, as in photo 2
 FLOOR_BRICK_W = 0.14          # floor bricks are 2:1, 28 x 14 cm, laid in herringbone
 SPRINGER_PROFILE = [(0.47, HS), (0.45, HS + 0.18), (0.38, HS + 0.55)]   # (radius, z): low brick block above each capital (round, smooth-shaded)
-# splayed arched windows: inner (room side) and outer opening, sill heights z, head heights z, widths
-WIN_SIDE = dict(zb_in=1.25, zt_in=3.40, w_in=1.15, zb_out=1.75, zt_out=3.05, w_out=0.42)   # left wall, one per bay
-WIN_END = dict(zb_in=1.10, zt_in=3.25, w_in=1.05, zb_out=1.80, zt_out=3.00, w_out=0.40)    # end walls, one per nave
+# large windows (left wall, one per bay; end walls, one per nave), measured on photo 1 with the calibrated camera:
+# a deep rectangular recess under a flat lintel, steps rising to a narrow round-headed light near the outer face
+WIN = dict(zb=1.48, zt=3.52, w=1.10, depth=0.80,              # recess: sill, lintel soffit, width at the face, depth
+           w_back=0.64,                                       # splayed: width at the back of the recess, round the light
+           light_zb=1.80, light_zt=3.33, light_w=0.50,        # light: sill, top of its round head, width
+           steps=4)
+# WINDOW_HEADS=arched builds a HYPOTHESIS, not what the photos show: the recess closed by a round rere-arch instead of
+# the lintel (crown 0.20 m above today's soffit), as the original 13th-15th century form may have been
+WINDOW_HEADS = os.environ.get('WINDOW_HEADS', 'lintel')
+ARCHED_CROWN_ABOVE_LINTEL = 0.20
 WEB_SINK = 0.12              # plaster cells dip this far where they meet a rib, so rib sides always reach the plaster
 
 
@@ -361,6 +368,16 @@ def mat_plaster_wall():
     return b.finish(col, 0.92, b.bump(h, 1.0, 0.015))
 
 
+def mat_plaster_reveal():
+    """window and door reveals: clean, pale lime plaster with soft mottling (photo 1)"""
+    b = NB('plaster_reveal')
+    big = b.noise(1.2, 5, 0.6)
+    fine = b.noise(30, 4, 0.6)
+    col = b.mix(b.ramp(big, [(nq(0.10), 0), (nq(0.90), 1)]), (0.82, 0.73, 0.53), (0.74, 0.63, 0.43))
+    col = b.mul(col, b.ramp(fine, [(nq(0.10), 0.90), (nq(0.90), 1.04)]), 0.6)
+    return b.finish(col, 0.93, b.bump(fine, 0.3, 0.01))
+
+
 def mat_plaster_vault():
     """vault plaster: soft rose and ochre blotches (photo 2), a fine dark speckle and sandy grain (photo 3),
     trowel undulation"""
@@ -524,6 +541,7 @@ MAT = {}
 def make_materials():
     MAT['wall'] = mat_plaster_wall()
     MAT['vault'] = mat_plaster_vault()
+    MAT['reveal'] = mat_plaster_reveal()
     MAT['floor'] = mat_floor_mortar()
     MAT['floor_bricks'] = mat_floor_bricks()
     MAT['rib'] = mat_brick_rib()
@@ -534,6 +552,7 @@ def make_materials():
     MAT['cap_leaf'] = mat_stone('capital_leaf', (0.58, 0.55, 0.36), (0.68, 0.65, 0.45), rust=False)
     MAT['cap_panel'] = mat_stone('capital_panel', (0.59, 0.55, 0.36), (0.69, 0.65, 0.45), rust=False)
     MAT['cap_teeth'] = mat_stone('capital_teeth', (0.66, 0.63, 0.43), (0.75, 0.73, 0.53), rust=False)   # palest, column 4
+    MAT['step'] = mat_stone('step_stone', (0.70, 0.66, 0.54), (0.78, 0.74, 0.61), rust=False)   # pale worn steps
     MAT['corbel'] = mat_stone('corbel_stone', (0.50, 0.46, 0.33), (0.58, 0.53, 0.39), rust=False)
     MAT['ground'] = mat_ground()
     MAT['iron'] = flat('iron', (0.03, 0.03, 0.03), 0.5, 0.8)
@@ -766,8 +785,10 @@ def wall_slab(name, axis, at, outward, openings):
     # openings -> one cutter object, one boolean
     if openings:
         cb = bmesh.new()
-        for (pa, pb, d_in) in openings:
-            hb = hull_cutter(pa, pb, lambda a, z, d: p3(a, z, d), d_in, WALL_T + 0.1)
+        for op in openings:
+            pa, pb, d_in = op[:3]
+            d_out = op[3] if len(op) > 3 else WALL_T + 0.1
+            hb = hull_cutter(pa, pb, lambda a, z, d: p3(a, z, d), d_in, d_out)
             m = bpy.data.meshes.new('tmp')
             hb.to_mesh(m)
             hb.free()
@@ -779,22 +800,40 @@ def wall_slab(name, axis, at, outward, openings):
         mod.operation = 'DIFFERENCE'
         mod.object = cut
         mod.solver = 'EXACT'
+        mod.use_self = True             # recess and light cutters overlap
         bpy.context.view_layer.objects.active = ob
         for o in bpy.context.view_layer.objects:
             o.select_set(False)
         ob.select_set(True)
         bpy.ops.object.modifier_apply(modifier='cut')
         bpy.data.objects.remove(cut, do_unlink=True)
+        # reveals, soffits and sills of the openings: clean lime plaster (as in the photos), not the flaking wall
+        n_main = Vector((1, 0, 0)) if axis == 'x' else Vector((0, 1, 0))
+        ob.data.materials.append(MAT['reveal'])
+        for poly in ob.data.polygons:
+            if abs(poly.normal.dot(n_main)) < 0.9 and HS - 2.0 < poly.center.z < HS + 2.5 and poly.center.z > 0.05:
+                poly.material_index = 1
     return ob
 
 
+def window_openings(c):
+    """cutters for one large window: the recess (flat lintel head, or the arched hypothesis) and the light"""
+    w = WIN
+    if WINDOW_HEADS == 'arched':
+        crown = w['zt'] + ARCHED_CROWN_ABOVE_LINTEL
+        front, back = arch_outline(c, w['zb'], crown, w['w']), arch_outline(c, w['zb'], crown, w['w_back'])
+    else:
+        front, back = rect_outline(c, w['zb'], w['zt'], w['w']), rect_outline(c, w['zb'], w['zt'], w['w_back'])
+    light = arch_outline(c, w['light_zb'], w['light_zt'], w['light_w'])
+    return [(front, back, -0.05, w['depth']), (light, light, w['depth'] - 0.03, WALL_T + 0.1)]
+
+
 def build_walls():
-    # left wall (x=0): arched splayed window per bay, plus small lunette window
+    # left wall (x=0): large window per bay, plus small lunette window
     left = []
     for j in range(NY):
         c = j * S + S / 2
-        ws = WIN_SIDE
-        left.append((arch_outline(c, ws['zb_in'], ws['zt_in'], ws['w_in']), arch_outline(c, ws['zb_out'], ws['zt_out'], ws['w_out']), -0.05))
+        left += window_openings(c)
         left.append((rect_outline(c, 4.25, 5.05, 0.80), rect_outline(c, 4.45, 4.90, 0.35), -0.05))
     wall_slab('wall_left', 'x', 0.0, -1, left)
 
@@ -804,69 +843,64 @@ def build_walls():
         right.append((arch_outline(c, -0.2, DOOR_TOP, DOOR_W), arch_outline(c, -0.2, DOOR_TOP, DOOR_W), -0.05))
     wall_slab('wall_right', 'x', W, +1, right)
 
-    # end walls: arched window + oculus per nave
+    # end walls: large window + oculus per nave
     ends = []
     for i in range(NX):
         c = i * S + S / 2
-        we = WIN_END
-        ends.append((arch_outline(c, we['zb_in'], we['zt_in'], we['w_in']), arch_outline(c, we['zb_out'], we['zt_out'], we['w_out']), -0.05))
+        ends += window_openings(c)
         ends.append((circle_outline(c, 4.55, 0.42), circle_outline(c, 4.55, 0.24), -0.05))
     wall_slab('wall_near', 'y', 0.0, -1, ends)
     wall_slab('wall_far', 'y', L, +1, ends)
 
 
-def window_steps():
-    """three stone treads in each arched window embrasure, rising toward the glass as in photo 1.
-    They fill the sloped sill the window cutter leaves (inner depth -0.05, outer WALL_T + 0.1)."""
-    bm = bmesh.new()
-    d_in, d_out = -0.05, WALL_T + 0.1
-
-    def treads(axis, at, outward, c, w):
-        sill = lambda d: w['zb_in'] + (w['zb_out'] - w['zb_in']) * (d - d_in) / (d_out - d_in)
-        width = lambda d: w['w_in'] + (w['w_out'] - w['w_in']) * (d - d_in) / (d_out - d_in)
-        n = 3
-        for k in range(n):
-            d0, d1 = WALL_T * k / n, WALL_T * (k + 1) / n
-            top = sill(d1)
-            if k == 0:                       # first tread starts at the sill line, flush with the wall face
-                d0, bot = 0.003, sill(0.0)
-            else:                            # buried in the wall below the slope
-                bot = w['zb_in'] - 0.3
-            wd = width(max(d0, 0.0)) + 0.06  # a few cm into the reveals
-            dc, dl = (d0 + d1) / 2, d1 - d0
-            if axis == 'x':
-                add_box(bm, (at + outward * dc, c, (top + bot) / 2), (dl, wd, top - bot))
-            else:
-                add_box(bm, (c, at + outward * dc, (top + bot) / 2), (wd, dl, top - bot))
-
-    for j in range(NY):
-        treads('x', 0.0, -1, j * S + S / 2, WIN_SIDE)
+def window_places():
+    """(axis, wall plane, outward sign, centre along the wall) of every large window"""
+    out = [('x', 0.0, -1, j * S + S / 2) for j in range(NY)]
     for i in range(NX):
-        c = i * S + S / 2
-        treads('y', 0.0, -1, c, WIN_END)
-        treads('y', L, +1, c, WIN_END)
-    return to_obj('window_steps', bm, MAT['corbel'])
+        out += [('y', 0.0, -1, i * S + S / 2), ('y', L, +1, i * S + S / 2)]
+    return out
+
+
+def wall_box(bm, axis, at, outward, c, d0, d1, z0, z1, width):
+    """box in a wall's frame: depth d0..d1 behind the inner face, z0..z1, width along the wall"""
+    dc, dl = (d0 + d1) / 2, d1 - d0
+    if axis == 'x':
+        add_box(bm, (at + outward * dc, c, (z0 + z1) / 2), (dl, width, z1 - z0))
+    else:
+        add_box(bm, (c, at + outward * dc, (z0 + z1) / 2), (width, dl, z1 - z0))
+
+
+def window_steps():
+    """stone steps filling each recess from its sill up to the light, as in photo 1 (about 8 cm risers); in the
+    lintel version also the stone lintel, hanging 4 cm below the soffit"""
+    w, bm = WIN, bmesh.new()
+    n, D = w['steps'], w['depth']
+    rise = (w['light_zb'] - w['zb']) / n
+    for (axis, at, outward, c) in window_places():
+        for k in range(n):
+            d0 = 0.003 if k == 0 else D * k / n
+            width = w['w'] + (w['w_back'] - w['w']) * d0 / D + 0.04        # follows the splay, ends hidden in the reveals
+            wall_box(bm, axis, at, outward, c, d0, D * (k + 1) / n, w['zb'], w['zb'] + rise * (k + 1), width)
+    steps = to_obj('window_steps', bm, MAT['step'])
+    if WINDOW_HEADS != 'arched':
+        bm = bmesh.new()
+        for (axis, at, outward, c) in window_places():
+            wall_box(bm, axis, at, outward, c, 0.005, 0.35, w['zt'] - 0.04, w['zt'] + 0.12, w['w'] + 0.30)
+        to_obj('window_lintels', bm, MAT['reveal'])
+    return steps
 
 
 def window_frames():
-    bm = bmesh.new()
-    # thin black bars across the outer opening of the end-wall and left-wall arched windows
-    def frame_x(xp, c, zb, zt, w):
-        add_box(bm, (xp, c, (zb + zt - w / 2) / 2), (0.03, 0.025, zt - w / 2 - zb))
-        add_box(bm, (xp, c, zb + (zt - w / 2 - zb) * 0.33), (0.03, w, 0.025))
-        add_box(bm, (xp, c, zb + (zt - w / 2 - zb) * 0.66), (0.03, w, 0.025))
-
-    def frame_y(yp, c, zb, zt, w):
-        add_box(bm, (c, yp, (zb + zt - w / 2) / 2), (0.025, 0.03, zt - w / 2 - zb))
-        add_box(bm, (c, yp, zb + (zt - w / 2 - zb) * 0.33), (w, 0.03, 0.025))
-        add_box(bm, (c, yp, zb + (zt - w / 2 - zb) * 0.66), (w, 0.03, 0.025))
-
-    for j in range(NY):
-        frame_x(-WALL_T + 0.35, j * S + S / 2, 1.78, 3.02, 0.40)
-    for i in range(NX):
-        c = i * S + S / 2
-        frame_y(-WALL_T + 0.35, c, 1.82, 2.98, 0.38)
-        frame_y(L + WALL_T - 0.35, c, 1.82, 2.98, 0.38)
+    """thin iron glazing bars in each round-headed light"""
+    w, bm = WIN, bmesh.new()
+    zb, zt, lw = w['light_zb'] + 0.02, w['light_zt'] - 0.02, w['light_w'] - 0.04
+    zs = zt - lw / 2                                  # springing of the round head
+    d = w['depth'] + 0.12
+    for (axis, at, outward, c) in window_places():
+        wall_box(bm, axis, at, outward, c, d - 0.015, d + 0.015, zb, zs + 0.15, 0.025)     # mullion
+        for f in (0.33, 0.66):
+            z = zb + (zs - zb) * f
+            wall_box(bm, axis, at, outward, c, d - 0.015, d + 0.015, z - 0.0125, z + 0.0125, lw)
     return to_obj('window_frames', bm, MAT['glassframe'])
 
 
@@ -1337,7 +1371,8 @@ def main():
     sc = bpy.context.scene
     sc.render.engine = 'CYCLES'
     sc.render.resolution_x, sc.render.resolution_y = 1600, 900
-    path = os.path.join(HERE, 'foresteria_furnished.blend' if WITH_FURNITURE else 'foresteria.blend')
+    name = 'foresteria' + ('_furnished' if WITH_FURNITURE else '') + ('_arched' if WINDOW_HEADS == 'arched' else '')
+    path = os.path.join(HERE, name + '.blend')
     bpy.context.preferences.filepaths.save_version = 0     # no .blend1 backup (not written to user prefs in -b)
     bpy.ops.wm.save_as_mainfile(filepath=path)
     print('saved', path)
