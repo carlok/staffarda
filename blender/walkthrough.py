@@ -165,9 +165,8 @@ def move_to(route_name):
 
 def look(dt, spec, hold_after=0.0):
     """turn the gaze to spec over dt seconds (from now), then keep it hold_after seconds, advancing time"""
-    global t
     GAZE.append((t + dt, spec))
-    t += dt
+    hold(dt)                                     # stand still while turning (no gap in the position timeline)
     if hold_after:
         GAZE.append((t + hold_after, spec))
         hold(hold_after)
@@ -383,6 +382,11 @@ def write_plan(path):
 print(f'WALKTHROUGH path {L_TOTAL:.1f} m, duration {T_TOTAL:.1f} s, {int(round(T_TOTAL * FPS))} frames at {FPS} fps')
 TRACK, PEAK = gaze_track(int(round(T_TOTAL * FPS)))
 print(f'WALKTHROUGH last walk starts at {T_END_MOVE:.1f} s (frame {int(T_END_MOVE * FPS) + 1})')
+_n = int(round(T_TOTAL * FPS))
+_steps = [(pos_at((f + 1) / FPS)[0] - pos_at(f / FPS)[0]).length * FPS for f in range(_n - 1)]
+print(f'WALKTHROUGH peak eye speed: {max(_steps):.2f} m/s (must stay near the walking speed, {CRUISE} m/s)')
+gaps = [(a[1], b[0]) for a, b in zip(POS[:-1], POS[1:]) if abs(b[0] - a[1]) > 1e-6]
+print(f'WALKTHROUGH gaps in the position timeline: {len(gaps)}')
 print(f'WALKTHROUGH peak turning speed: yaw {PEAK[0]:.1f} deg/s, pitch {PEAK[1]:.1f} deg/s')
 print('WALKTHROUGH clearances (min, m): ' + ', '.join(f'{k} {v:.2f}' for k, v in clearances().items()))
 write_plan(os.path.join(HERE, 'video', 'path_plan.svg'))
