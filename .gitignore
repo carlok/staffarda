@@ -1,0 +1,11 @@
+# heavy or regenerable: photos, renders, Blender files (rebuild with blender/build_foresteria.py)
+*.jpg
+*.jpeg
+*.png
+*.blend
+*.blend1
+blender/renders/
+blender/compare/
+
+.DS_Store
+__pycache__/

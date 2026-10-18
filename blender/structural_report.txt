@@ -1,0 +1,37 @@
+self-test: semicircle t_min/R = 0.1096  (classical value 0.1075; this vertical-slice approximation is expected within a few %)
+
+DESIGN VALUES: transverse arch depth 50 cm, diagonal rib 32 cm, wall 1.20 m, corbel 0.40 x 0.60 x 0.65 m, haunch backing to 4.5 m
+
+=== right-wall doorways vs springing points ===
+  doorway y=18.50 m: 1.45 m clear of the nearest corbel, >= 2.72 m of masonry over the head  [ok]
+  doorway y=20.10 m: 0.65 m clear of the nearest corbel, >= 2.17 m of masonry over the head  [ok]
+
+=== CASE A1: vault only, haunches backed with masonry up to 4.5 m ===
+  diagonal rib     t=  32 cm  V=    45 kN/end  H   11.2..  13.2 kN  t_min= 21.7 cm  GFS=1.48
+  transverse arch  t=  50 cm  V=    39 kN/end  H   14.2..  19.5 kN  t_min= 33.8 cm  GFS=1.48
+  wall arch        (sits in the wall mass, not a free arch)  V=    18 kN/end
+  interior column: N = 366 kN -> 1.30 MPa on the shaft
+  wall corbel: V = 165 kN, bearing 0.69 MPa, bending tension at the wall face 0.78 MPa
+  outward force on the wall per corbel: 30 kN (minimum equilibrium) .. 38 kN (maximum)
+  wall t=1.20 m under H_min: e/t = +0.01 (inside middle third), overturning factor F = 5.25
+  wall t=1.20 m under H_max: e/t = +0.04 (inside middle third), overturning factor F = 4.14
+  thinnest wall strip with F>=2.0 (H_min) and F>=1.3 (H_max): 0.70 m
+  sensitivity to how the web load is split between diagonals and side arches:
+    diagonals 50% / side arches 50%: GFS diagonal 1.33, transverse 1.45
+    diagonals 60% / side arches 40%: GFS diagonal 1.48, transverse 1.48
+    diagonals 70% / side arches 30%: GFS diagonal 1.49, transverse 1.50
+
+=== CASE B: vault carries the dormitory floor on fill (fill to 6.7 m, floor 3+2 kN/m2) ===
+  diagonal rib     t=  32 cm  V=   173 kN/end  H   41.0..  51.2 kN  t_min= 20.3 cm  GFS=1.58
+  transverse arch  t=  50 cm  V=   129 kN/end  H   60.2..  74.5 kN  t_min= 39.3 cm  GFS=1.27
+  wall arch        (sits in the wall mass, not a free arch)  V=    63 kN/end
+  interior column: N = 1242 kN -> 4.39 MPa on the shaft
+  wall corbel: V = 602 kN, bearing 2.51 MPa, bending tension at the wall face 2.85 MPa
+  outward force on the wall per corbel: 118 kN (minimum equilibrium) .. 147 kN (maximum)
+  wall t=1.20 m under H_min: e/t = +0.05 (inside middle third), overturning factor F = 2.82
+  wall t=1.20 m under H_max: e/t = +0.11 (inside middle third), overturning factor F = 2.27
+  thinnest wall strip with F>=2.0 (H_min) and F>=1.3 (H_max): 0.95 m
+  sensitivity to how the web load is split between diagonals and side arches:
+    diagonals 50% / side arches 50%: GFS diagonal 1.63, transverse 1.26
+    diagonals 60% / side arches 40%: GFS diagonal 1.58, transverse 1.27
+    diagonals 70% / side arches 30%: GFS diagonal 1.56, transverse 1.29
