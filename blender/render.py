@@ -43,7 +43,7 @@ except Exception as e:
 
 sc.view_settings.view_transform = 'AgX'
 sc.view_settings.look = 'None'
-sc.view_settings.exposure = float(os.environ.get('EXPOSURE', '0.8'))
+sc.view_settings.exposure = float(os.environ.get('EXPOSURE', '2.6'))
 sc.render.image_settings.file_format = 'PNG'
 sc.render.film_transparent = False
 
@@ -61,7 +61,7 @@ for name in cams:
         bgn = [n for n in wnt.nodes if n.type == 'BACKGROUND'][0]
         bgn.inputs['Color'].default_value = (0.62, 0.66, 0.72, 1)
     else:
-        sc.view_settings.exposure = float(os.environ.get('EXPOSURE', '0.8'))
+        sc.view_settings.exposure = float(os.environ.get('EXPOSURE', '2.6'))
     portrait = bool(cam.get('portrait', False))
     long_px = Q['long']
     if portrait:

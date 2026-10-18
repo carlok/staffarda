@@ -41,8 +41,8 @@ VIEW_LENS = 24.0          # mm, viewport focal length (about 74 degrees horizont
 
 # Real-time look, tuned against renders/hero_F_final.jpg (see README). All overridable for experiments.
 TUNE = dict(
-    exposure=1.25,        # same as the hero render
-    fill_color=(1.0, 0.72, 0.45),   # warm ambient standing in for the bounce light Cycles gets
+    exposure=2.0,         # matches the Cycles hero render's mean brightness (headless check, within 4%)
+    fill_color=(1.0, 0.84, 0.66),   # warm ambient standing in for the bounce light Cycles gets
     fill_strength=0.08,
     raytracing=True,
     rt_resolution_scale='2',        # raytracing resolution: '1' full, '2' half, '4' quarter

@@ -13,7 +13,7 @@ from what the photos show, then cameras are placed where the photos were taken s
 | `structural_check.py` | Thrust-line check of the vault and its supports; reads its dimensions straight from `build_foresteria.py`. Output in `structural_report.txt`. |
 | `render_hero.py` | One-off high-quality still from standing eye height (1.6 m). `final` = 3840x2160, 16-bit, 800 samples + denoise, about 11 min on this Mac. |
 | `walk.py` | Opens the model in the Blender GUI with real-time EEVEE lighting and starts Walk Navigation at the doorway. See "Walking through it". |
-| `renders/` | Final Cycles renders (1600 px long side, 160 samples, denoised) and the 4K hero; `walk_eevee_*.png` and `walk_vs_cycles_F.jpg` are the EEVEE test renders from `walk.py` (made before the column stone and springer changes) |
+| `renders/` | Final Cycles renders (1600 px long side, 160 samples, denoised) and the 4K hero; `walk_eevee_*.png` and `walk_vs_cycles_F.jpg` are the EEVEE test renders from `walk.py` (made before the lighting, stone, capital and arch changes) |
 | `compare/` | Original photo on the left, render on the right |
 
 Rebuild and re-render:
@@ -22,8 +22,8 @@ Rebuild and re-render:
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b --python build_foresteria.py                  # empty room -> foresteria.blend
 FURNITURE=1 $B -b --python build_foresteria.py      # with furniture -> foresteria_furnished.blend
-EXPOSURE=1.2 $B -b foresteria_furnished.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3
-EXPOSURE=1.2 $B -b foresteria.blend --python render.py -- final cam_overview
+$B -b foresteria_furnished.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3
+$B -b foresteria.blend --python render.py -- final cam_overview
 $B -b --python compare.py
 python3 structural_check.py > structural_report.txt
 ```
@@ -31,14 +31,20 @@ python3 structural_check.py > structural_report.txt
 ## What is modelled
 
 - Hall of 2 naves x 5 square bays, 4 round stone columns on the centre line (base, shaft with a little
-  entasis and irregularity, scalloped capital, octagonal abacus, iron tie band on the first one). The column
-  stone is a light greenish grey with faint rust, kept low in saturation so it separates from the ochre walls.
+  entasis and irregularity, iron tie band on the first one). The shaft stone is a light warm grey with faint rust.
+- The four capitals differ, as in photos 1 and 2 (`CAPITAL_STYLES`, `capital()`), counting from the entrance end:
+  1 a plain round cushion under a thick octagonal slab (darker stone); 2 a bell with eight broad leaves curling
+  out under the slab corners; 3 a flared octagonal bell with flat carved panels; 4 a drum with a band of small
+  teeth (palest stone). Their carving is simplified: shapes and proportions, not the real ornament.
 - Above each capital a low, round brick block (`SPRINGER_PROFILE`, 0.55 m high, smooth-shaded) where the ribs
   start. A taller 1.5 m version looked much heavier than the real capitals in photos 1 and 2 and was dropped. A
-  small dark notch is still visible where two ribs part above the near capital in the hero view.
+  small notch is still visible where two ribs part above the near capital in the hero view.
 - Pointed brick rib vault: 10 bays, each with two round-nosed diagonal ribs, transverse/longitudinal
   arches and wall arches, domed plaster cells, a rosette keystone per bay. Brick courses come from a
-  procedural shader driven by arc length along each rib.
+  procedural shader driven by arc length along each rib: bricks vary from deep red to pale buff, with bold
+  white lime joints. The square-section arches are brick only on the soffit; above the springer blocks their
+  sides are plastered like the cells, which gives the light/red banding seen in the photos. Lower down, where
+  the ribs gather above the capitals, the sides stay brick.
 - Walls with splayed arched windows (left wall, one per bay) and small lunette windows, an arched window
   plus an oculus per nave in each end wall, two doorways in the right wall near the far end. Window sizes are
   `WIN_SIDE` / `WIN_END`. Each arched window has three stone steps rising toward the glass (`window_steps()`),
@@ -46,9 +52,12 @@ python3 structural_check.py > structural_report.txt
 - Brick floor laid in 90-degree herringbone, as in photos 1 and 2: 7,771 real bricks of 28 x 14 cm
   (`floor_bricks()`, `FLOOR_BRICK_W`) with worn chamfered edges, small random twist, tilt and size, over a
   dusty mortar bed (the `floor` object). Each brick carries two random attributes that pick its tone, from
-  dark red-tan to pale worn beige; large dust patches, scuffs and pits sit on top. The tones are tuned so the
-  rendered floor matches the colour measured in the photos; the photos remain about twice as bright overall.
-- Uplights on the capitals, a copper conduit along the right wall.
+  dark red-tan to pale worn beige; large dust patches, scuffs and pits sit on top.
+- Lighting: sun and sky through the openings, plus eight uplights on the capitals at `UPLIGHT_W` = 120 W each,
+  and a copper conduit along the right wall. With the renders' exposure of 2.6, measured against photo 2, the
+  column and vault come out at the photo's brightness, the floor at about 0.8 of it and the walls at about
+  0.67. The walls are also much more orange than in the photos (red/blue about 2 against 1.3); that is the
+  plaster colour, which has not been changed.
 - The room is **empty by default**. The chairs, tables and fire extinguishers from the photos are in
   `furniture()`; build with `FURNITURE=1` to get them, in `foresteria_furnished.blend`.
 - Right wall: two arched doorways at y = 18.5 m and 20.1 m (`DOOR_CENTRES`). The first has a plank door with iron straps,
@@ -90,8 +99,8 @@ the renders up with the photos. `cam_overview_final.png` and `cam_door_draft_emp
 ```bash
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b --python build_foresteria.py && FURNITURE=1 $B -b --python build_foresteria.py
-EXPOSURE=1.2 $B -b foresteria_furnished.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3
-EXPOSURE=1.2 $B -b foresteria.blend --python render.py -- final cam_overview
+$B -b foresteria_furnished.blend --python render.py -- final cam_photo1 cam_photo2 cam_photo3
+$B -b foresteria.blend --python render.py -- final cam_overview
 $B -b --python compare.py
 ```
 
@@ -104,7 +113,7 @@ $B -b --python compare.py
 Blender 5.1 only (it uses 5.1 property names). `walk.py` does not change the .blend on disk. At start-up it:
 
 - builds a second scene, `walk`, that shares all objects with the Cycles scene but has its own world and EEVEE
-  settings (raytracing, Fast GI, AgX, exposure 1.25), so `render.py` and `render_hero.py` still see the Cycles scene as it was;
+  settings (raytracing, Fast GI, AgX, exposure 2.0), so `render.py` and `render_hero.py` still see the Cycles scene as it was;
 - maximises the 3D viewport (Back to Previous, top bar, or Ctrl+Space, gets the normal layout back), Rendered
   shading, overlays and gizmos off, 24 mm lens;
 - puts the eye at the open right-wall doorway (x = 10.65, y = 20.1 m, 1.6 m up) looking down the hall; the door leaf
@@ -128,8 +137,9 @@ Things to know:
   sky only for camera rays (windows and doorways stay bright) and lights everything else with a dim warm fill
   (`fill_color`, `fill_strength` 0.08); the sun and the uplights are the original lamps with real shadows.
   Raytracing with Fast GI adds screen-space bounce light and ambient occlusion on top.
-  Against `hero_F_final.jpg` the EEVEE version has the same mean brightness (0.247 vs 0.246 on the 8-bit image),
-  colour balance and sun patches (`renders/walk_vs_cycles_F.jpg`). It is darker at the far end wall and has
+  After the lighting change (dimmer uplights, exposure 2.6 in Cycles) the walk exposure was re-matched to 2.0 and
+  the fill made less warm: a headless EEVEE render from the hero camera is within 4 % of the Cycles hero's mean
+  brightness, red/blue 2.0 against 1.9. `renders/walk_vs_cycles_F.jpg` is from the earlier lighting. It is darker at the far end wall and has
   less smooth bounce gradients, and screen-space effects cannot see what is off-screen, so the ambient shifts a bit as you turn.
 - **Grain while moving.** Raytracing is noisy for a frame or two after the view changes and clears up while you stand
   still (64 samples). I could not watch the viewport in motion, so frame rate and how the grain looks while walking
@@ -157,7 +167,7 @@ x = 8.7 m, y = 1.0 m in the right nave near the entrance end, eye height 1.6 m, 
 horizontal), tilted up 8 degrees, looking diagonally toward the far-left corner.
 
 ```bash
-EXPOSURE=1.25 /Applications/Blender.app/Contents/MacOS/Blender -b foresteria.blend --python render_hero.py -- final F
+/Applications/Blender.app/Contents/MacOS/Blender -b foresteria.blend --python render_hero.py -- final F
 ```
 
 Other candidate viewpoints (`A` to `E`) are in the script; `test` renders 1280 px in about 15 s.

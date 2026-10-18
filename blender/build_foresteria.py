@@ -35,7 +35,7 @@ D_ABOVE = 0.16               # hidden part of each rib above the web
 CORBEL = (0.40, 0.60, 0.65)  # wall corbels: projection, width, height (sized in structural_check.py)
 DOOR_W, DOOR_TOP = 1.10, 2.55  # right-wall doorways: width and height of the arched head
 CAPITAL_STYLES = ('plain', 'leaf', 'panel', 'teeth')   # columns 1..4 from the entrance end, as in photos 1 and 2
-UPLIGHT_W = 230              # watts per uplight (two per capital); the daylight does most of the work, as in the photos
+UPLIGHT_W = 120              # watts per uplight (two per capital): vault about as bright as the walls, as in photo 2
 FLOOR_BRICK_W = 0.14          # floor bricks are 2:1, 28 x 14 cm, laid in herringbone
 SPRINGER_PROFILE = [(0.47, HS), (0.45, HS + 0.18), (0.38, HS + 0.55)]   # (radius, z): low brick block above each capital (round, smooth-shaded)
 # splayed arched windows: inner (room side) and outer opening, sill heights z, head heights z, widths
@@ -279,22 +279,22 @@ def mat_floor_bricks():
     r2 = b.node('ShaderNodeAttribute', attribute_type='GEOMETRY', attribute_name='brick_rand2').outputs['Fac']
     # tan cotto, tuned so the rendered floor matches the colour measured in photos 1 and 2
     # (red:green:blue about 0.42 : 0.34 : 0.24); the room's warm light pushes it redder, so the albedo leans yellow
-    tone = b.ramp(r1, [(0.00, (0.40, 0.29, 0.19)),     # dark, reddish
-                       (0.15, (0.49, 0.38, 0.25)),     # warmer red-tan
-                       (0.45, (0.56, 0.48, 0.32)),     # ordinary faded cotto
-                       (0.80, (0.62, 0.55, 0.40)),     # pale, worn
-                       (1.00, (0.58, 0.55, 0.44))])    # greyish, dust ground in
+    tone = b.ramp(r1, [(0.00, (0.44, 0.30, 0.17)),     # dark, reddish
+                       (0.15, (0.54, 0.40, 0.22)),     # warmer red-tan
+                       (0.45, (0.62, 0.50, 0.28)),     # ordinary faded cotto
+                       (0.80, (0.67, 0.58, 0.36)),     # pale, worn
+                       (1.00, (0.63, 0.57, 0.40))])    # greyish, dust ground in
     jitter = b.ramp(r2, [(0.0, 0.75), (0.03, 0.75), (0.035, 0.92), (1.0, 1.06)])   # r2 < 0.03: sunken, darker bricks
     col = b.mul(tone, jitter, 1.0)
     mott = b.noise(18, 5, 0.6, dist=0.4)
     col = b.mul(col, b.ramp(mott, [(0.3, 0.82), (0.7, 1.10)]), 1.0)
     wear = b.val(b.ramp(b.noise(9, 5, 0.6, dist=0.6), [(0.52, 0.0), (0.74, 0.65)]))   # pale scuffed patches on the faces
-    col = b.mix(wear, col, (0.68, 0.66, 0.53))
+    col = b.mix(wear, col, (0.72, 0.67, 0.49))
     pits = b.ramp(b.noise(140, 2, 0.5), [(0.62, 1.0), (0.70, 0.72)])                   # small dark pits in the clay
     col = b.mul(col, pits, 1.0)
     dust = b.math('MULTIPLY', b.val(b.ramp(b.noise(0.35, 5, 0.6), [(0.30, 0.22), (0.72, 0.80)])),
                   b.val(b.ramp(b.noise(2.5, 4, 0.6), [(0.3, 0.65), (0.7, 1.0)])))
-    col = b.mix(dust, col, (0.62, 0.58, 0.45))     # beige dust
+    col = b.mix(dust, col, (0.67, 0.60, 0.41))     # beige dust
     fine = b.noise(70, 4, 0.6)
     col = b.mul(col, b.ramp(fine, [(0.3, 0.90), (0.7, 1.05)]), 0.6)
     return b.finish(col, 0.82, b.bump(fine, 0.25, 0.004))
@@ -363,11 +363,11 @@ def make_materials():
     MAT['floor_bricks'] = mat_floor_bricks()
     MAT['rib'] = mat_brick_rib()
     MAT['springer'] = mat_brick_rib(use_z=True)
-    MAT['col'] = mat_stone('column_stone', (0.52, 0.50, 0.43), (0.64, 0.62, 0.54), rust_amt=0.4, rust_col=(0.30, 0.21, 0.14))   # light warm grey-green stone (photo 2), faint rust
-    MAT['cap_plain'] = mat_stone('capital_plain', (0.42, 0.40, 0.35), (0.52, 0.49, 0.43), rust=False)   # darker, column 1
-    MAT['cap_leaf'] = mat_stone('capital_leaf', (0.55, 0.54, 0.48), (0.66, 0.64, 0.57), rust=False)
-    MAT['cap_panel'] = mat_stone('capital_panel', (0.56, 0.54, 0.47), (0.67, 0.64, 0.56), rust=False)
-    MAT['cap_teeth'] = mat_stone('capital_teeth', (0.64, 0.62, 0.56), (0.74, 0.72, 0.66), rust=False)   # palest, column 4
+    MAT['col'] = mat_stone('column_stone', (0.58, 0.54, 0.42), (0.70, 0.66, 0.52), rust_amt=0.4, rust_col=(0.30, 0.21, 0.14))   # light warm grey stone (photo 2), faint rust
+    MAT['cap_plain'] = mat_stone('capital_plain', (0.46, 0.42, 0.34), (0.56, 0.52, 0.42), rust=False)   # darker, column 1
+    MAT['cap_leaf'] = mat_stone('capital_leaf', (0.60, 0.56, 0.45), (0.71, 0.67, 0.55), rust=False)
+    MAT['cap_panel'] = mat_stone('capital_panel', (0.61, 0.56, 0.45), (0.72, 0.67, 0.55), rust=False)
+    MAT['cap_teeth'] = mat_stone('capital_teeth', (0.69, 0.65, 0.54), (0.79, 0.76, 0.65), rust=False)   # palest, column 4
     MAT['corbel'] = mat_stone('corbel_stone', (0.42, 0.37, 0.28), (0.48, 0.42, 0.32), rust=False)
     MAT['ground'] = mat_ground()
     MAT['iron'] = flat('iron', (0.03, 0.03, 0.03), 0.5, 0.8)
@@ -466,8 +466,8 @@ def add_rib(bm, uvl, pts, bvec, width, d_below, d_above=0.12, rounded=False, pla
             for i in range(n - 1):
                 f = bm.faces.new((rows[k][i], rows[k + 1][i], rows[k + 1][i + 1], rows[k][i + 1]))
                 f.smooth = rounded
-                if plaster_sides and not rounded and k != 1:     # k 0 and 2: the arch's side faces
-                    f.material_index = 1
+                if plaster_sides and not rounded and k != 1 and pts[i].z > HS + 0.75:   # side faces, above the springer
+                    f.material_index = 1                                                  # (lower down the bundle stays brick)
                 for lp, uv in zip(f.loops, [(s_[i], vs_cum[k]), (s_[i], vs_cum[k + 1]),
                                             (s_[i + 1], vs_cum[k + 1]), (s_[i + 1], vs_cum[k])]):
                     lp[uvl].uv = uv
@@ -702,17 +702,17 @@ def capital(bm, style, cx, cy):
     lathe(bm, [(0.30, 2.055), (0.33, 2.07), (0.342, 2.095), (0.33, 2.12), (0.315, 2.13)], 48, cx=cx, cy=cy)   # astragal ring
     if style == 'plain':          # round cushion drum under a thick, edge-rounded octagonal slab
         lathe(bm, [(0.315, 2.13), (0.37, 2.15), (0.41, 2.18), (0.44, 2.23), (0.455, 2.28), (0.46, 2.32)], 48, cx=cx, cy=cy)
-        lathe(bm, [(0.50, 2.32), (0.545, 2.335), (0.56, 2.36), (0.56, 2.46), (0.545, 2.49), (0.52, HS)], 8,
+        lathe(bm, [(0.46, 2.32), (0.545, 2.345), (0.56, 2.37), (0.56, 2.46), (0.545, 2.49), (0.52, HS)], 8,
               rot=th0, smooth=False, cx=cx, cy=cy)
     elif style == 'leaf':         # bell with eight broad leaves curling out under the abacus corners
         prof = [(0.315 + 0.155 * smooth01(0.0, 1.0, t) ** 1.6, 2.13 + 0.21 * t) for t in [i / 16 for i in range(17)]]
 
         def leaves(th, z):
             s_ = smooth01(2.16, 2.34, z)
-            lobe = max(0.0, math.cos(8 * (th - th0))) ** 1.5
-            return 1 + (0.10 * s_ + 0.06 * smooth01(2.29, 2.34, z)) * lobe - 0.02 * s_ * (1 - lobe)
+            lobe = max(0.0, math.cos(8 * (th - th0))) ** 3
+            return 1 + (0.13 * s_ + 0.07 * smooth01(2.29, 2.34, z)) * lobe - 0.045 * s_ * (1 - lobe)
         lathe(bm, prof, 96, radial=leaves, cx=cx, cy=cy)
-        lathe(bm, [(0.52, 2.34), (0.56, 2.36), (0.56, 2.48), (0.55, HS)], 8, rot=th0, smooth=False, cx=cx, cy=cy)
+        lathe(bm, [(0.47, 2.34), (0.56, 2.37), (0.56, 2.48), (0.55, HS)], 8, rot=th0, smooth=False, cx=cx, cy=cy)
     elif style == 'panel':        # flared octagonal bell with flat carved panels
         def octo(th, z):
             ph = (th + math.pi / 8) % (math.pi / 4) - math.pi / 8          # 0 at a face centre, +-22.5 deg at the corners
@@ -720,7 +720,7 @@ def capital(bm, style, cx, cy):
             return o * (0.965 if abs(ph) < 0.30 and 2.18 < z < 2.31 else 1.0)
         prof = [(0.33 + 0.16 * t ** 1.3, 2.13 + 0.22 * t) for t in [i / 16 for i in range(17)]]
         lathe(bm, prof, 64, radial=octo, smooth=False, cx=cx, cy=cy)
-        lathe(bm, [(0.52, 2.35), (0.555, 2.37), (0.555, 2.48), (0.54, HS)], 8, rot=th0, smooth=False, cx=cx, cy=cy)
+        lathe(bm, [(0.49, 2.35), (0.555, 2.375), (0.555, 2.48), (0.54, HS)], 8, rot=th0, smooth=False, cx=cx, cy=cy)
     else:                         # 'teeth': plain drum, a band of small pointed teeth, thin cornice and slab
         lathe(bm, [(0.315, 2.13), (0.355, 2.145), (0.36, 2.16), (0.36, 2.185), (0.348, 2.19), (0.36, 2.196),
                    (0.36, 2.22), (0.40, 2.225)], 48, cx=cx, cy=cy)
@@ -732,7 +732,7 @@ def capital(bm, style, cx, cy):
             return 1.0 if w < 0.15 + 0.85 * t else 0.91      # teeth narrow to points at the bottom
         lathe(bm, [(0.40, 2.225 + 0.065 * i / 13) for i in range(14)], 192, radial=teeth, smooth=False, cx=cx, cy=cy)
         lathe(bm, [(0.40, 2.29), (0.43, 2.30), (0.455, 2.325), (0.46, 2.34)], 48, cx=cx, cy=cy)
-        lathe(bm, [(0.50, 2.34), (0.53, 2.355), (0.535, 2.48), (0.525, HS)], 8, rot=th0, smooth=False, cx=cx, cy=cy)
+        lathe(bm, [(0.46, 2.34), (0.53, 2.36), (0.535, 2.48), (0.525, HS)], 8, rot=th0, smooth=False, cx=cx, cy=cy)
 
 
 def columns():

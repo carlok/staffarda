@@ -4,7 +4,7 @@ One-off hero shot(s) from inside the hall at standing eye height.
   Blender -b foresteria.blend --python render_hero.py -- <preset> <view> [<view> ...]
   preset: test | final
   view:   a key of VIEWS below
-Env: EXPOSURE (default 1.1), HAZE (dust density, 0 = off), TAG (file suffix)
+Env: EXPOSURE (default 2.6), HAZE (dust density, 0 = off), TAG (file suffix)
 """
 import bpy, sys, os, math
 from mathutils import Vector
@@ -65,7 +65,7 @@ except Exception as e:
 
 sc.view_settings.view_transform = 'AgX'
 sc.view_settings.look = os.environ.get('LOOK', 'None')
-sc.view_settings.exposure = float(os.environ.get('EXPOSURE', '1.1'))
+sc.view_settings.exposure = float(os.environ.get('EXPOSURE', '2.6'))
 sc.render.image_settings.file_format = 'PNG'
 sc.render.image_settings.color_depth = '16' if preset == 'final' else '8'
 sc.render.resolution_x = P['w']
