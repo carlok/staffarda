@@ -258,13 +258,15 @@ starts and stops, a slight head bob and motion blur, in EEVEE with the walk-mode
 (`video/path_plan.svg`): in through the open right-wall doorway, round the far side of column 4, then a slalom past
 columns 3, 2 and 1, stopping at each to look around (capital, ribs and keystone; the right wall and a base; a window
 with its steps and a corbel; the near keystone and column 1's broken base), and at the near end a turn back into
-the long view of the hero render. 35 m, about 65 s, at least 1.3 m from every column axis and 1.1 m from the walls.
+the long view of the hero render. One continuous take, 35 m at a slow 0.62 m/s, 1 min 52 s, at least 1.3 m from
+every column axis and 1.1 m from the walls. The gaze eases toward each target through a damped follower whose turning
+speed is capped (24 deg/s side to side, 16 deg/s up and down), so the view never jumps.
 
 ```bash
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b foresteria.blend --python walkthrough.py -- plan       # path diagram and timing only
-$B -b foresteria.blend --python walkthrough.py -- preview    # 640x360, 12 fps, ~18 min
-caffeinate -i $B -b foresteria.blend --python walkthrough.py -- final   # 1920x1080, 24 fps, 40 samples, ~4 h
+$B -b foresteria.blend --python walkthrough.py -- preview    # 640x360, 12 fps, ~30 min
+caffeinate -i $B -b foresteria.blend --python walkthrough.py -- final   # 1920x1080, 24 fps, 40 samples, ~5.4 h
 ```
 
 Frames go to `video/<preset>/` and are skipped when they exist, so an interrupted render resumes by running the same

@@ -28,9 +28,12 @@ PRESETS = {
 FPS = 24
 EYE = 1.60            # eye height, m
 LENS = 24.0           # mm on a 36 mm sensor: about 74 degrees horizontal
-CRUISE = 1.0          # walking speed, m/s
-ACCEL_T = 1.0         # seconds to reach it from a stop (and to stop)
-BOB = 0.010           # head bob amplitude while walking, m
+CRUISE = 0.62         # walking speed, m/s: a slow, looking-around pace
+ACCEL_T = 2.0         # seconds to reach it from a stop (and to stop)
+BOB = 0.006           # head bob amplitude while walking, m
+GAZE_W = 2.0          # gaze follows its target like a critically damped spring (rad/s): settles in about 2 s
+MAX_YAW_RATE = 24.0   # deg/s: the view never turns faster than a slow head turn, so there is never a cut
+MAX_PITCH_RATE = 16.0
 BOB_HZ = 1.8          # steps per second
 
 spec = importlib.util.spec_from_file_location('walkmod', os.path.join(HERE, 'walk.py'))
@@ -189,43 +192,46 @@ def s_of_name(i):
 
 
 AHEAD = ('ahead', 3.0)
+LEVEL = ('ahead', 0.0)
 GAZE.append((0.0, AHEAD))
-hold(1.2)                                                     # standing in the doorway, looking in
+hold(2.0)                                                     # standing in the doorway, looking in
 ta, tb = move_to('S1')
-GAZE.append((time_at_s(S_OF[2]), AHEAD))                      # straight in until past the threshold
-GAZE.append((time_at_s(S_OF[4]), ('point', (S, 21.6, 2.0))))  # then keep column 4 in view while rounding it
+GAZE.append((time_at_s(S_OF[2]), AHEAD))                      # straight in, past the threshold
+GAZE.append((time_at_s(S_OF[3]), ('point', (S, 21.6, 2.4))))  # column 4 and its capital while rounding it
 GAZE.append((tb, ('point', CAP(4))))
-# stop 1, west of column 4: up the capital to the ribs, then to the keystone of the far-left bay
-POS.append((t, t, POS[-1][3], POS[-1][3], None))
-look(1.3, ('point', (S, 21.6, 4.6)), 0.5)
-look(1.5, ('point', (2.7, 24.3, 6.4)), 0.8)
+# stop 1, beyond column 4: up the capital into the ribs, on to the keystone, then across to a window
+look(3.2, ('point', (S, 21.6, 4.8)), 0.8)
+look(3.2, ('point', (2.7, 24.3, 6.4)), 1.2)
 ta, tb = move_to('S2')
-GAZE.append((ta + 1.6, AHEAD))
-GAZE.append((tb - 1.2, AHEAD))
-GAZE.append((tb, ('ahead', 0.0)))
-# stop 2, east of column 3: left to the right wall (corbel, doorways), then down to column 3's base
-look(1.4, ('point', (HALL_W, 18.6, 2.3)), 0.7)
-look(1.4, ('point', (S, 16.2, 0.2)), 0.6)
+GAZE.append((ta + 3.0, LEVEL))
+GAZE.append((time_at_s(S_OF[9]), ('point', (4.2, 18.9, 6.0))))   # up at the vault while crossing between columns
+GAZE.append((time_at_s(S_OF[10]), AHEAD))
+GAZE.append((tb, LEVEL))
+# stop 2, beside column 3: across to the right wall's doorways and corbel, then down to the column's base
+look(3.2, ('point', (HALL_W, 18.6, 2.0)), 1.0)
+look(3.2, ('point', (S, 16.2, 0.2)), 0.9)
 ta, tb = move_to('S3')
-GAZE.append((ta + 1.6, AHEAD))
-GAZE.append((tb - 1.2, AHEAD))
-GAZE.append((tb, ('ahead', 0.0)))
-# stop 3, west of column 2: right to a left-wall window with its steps, then up to the left-wall corbel
-look(1.4, ('point', (0.0, 8.1, 2.3)), 0.7)
-look(1.3, ('point', (0.2, 10.8, 3.2)), 0.6)
+GAZE.append((ta + 3.0, LEVEL))
+GAZE.append((time_at_s(S_OF[13]), ('point', (0.0, 13.5, 2.4))))  # a left-wall window, walking past
+GAZE.append((time_at_s(S_OF[14]), ('point', (S, 10.8, 2.3))))    # column 2's capital
+GAZE.append((tb, LEVEL))
+# stop 3, beside column 2: the next window with its steps, up to the wall corbel, down to the brick floor
+look(3.2, ('point', (0.0, 8.1, 2.3)), 1.0)
+look(3.2, ('point', (2.6, 8.8, 0.0)), 1.0)
 ta, tb = move_to('S4')
-GAZE.append((ta + 1.6, AHEAD))
-GAZE.append((tb - 1.2, AHEAD))
+GAZE.append((ta + 3.0, LEVEL))
+GAZE.append((time_at_s(S_OF[17]), ('point', CAP(1))))            # column 1's capital, coming toward it
 GAZE.append((tb, ('ahead', 4.0)))
-# stop 4, east of column 1: up to the keystone of the near bay, then down to column 1's broken base
-look(1.5, ('point', (8.1, 2.7, 6.4)), 0.6)
-look(1.6, ('point', (S, 5.4, 0.15)), 0.6)
+# stop 4, beside column 1: up to the near bay's keystone, then down to the broken base
+look(3.2, ('point', (8.1, 2.7, 6.4)), 1.0)
+look(3.5, ('point', (S, 5.4, 0.15)), 0.9)
 ta, tb = move_to('END')
-GAZE.append((ta + 1.6, AHEAD))
-GAZE.append((tb, ('ahead', 2.0)))
-# end: turn back past the left-wall windows to the long view down the hall, and stay there
-look(1.8, ('dir', 180.0, 5.0))
-look(2.0, ('dir', 119.0, 8.0), 3.0)
+T_END_MOVE = ta
+GAZE.append((ta + 3.0, ('point', (0.0, 2.7, 2.3))))        # across the hall to the near-left window while walking
+GAZE.append((tb, ('dir', 180.0, 5.0)))                     # (not at the near end wall, which is only 1 m away)
+# end: turn slowly back past the left-wall windows to the long view down the hall, and stay there
+look(2.0, ('dir', 180.0, 5.0))
+look(4.0, ('dir', 119.0, 8.0), 3.5)
 T_TOTAL = t
 
 
@@ -256,9 +262,9 @@ def resolve(spec_, tt, eye):
     kind = spec_[0]
     if kind == 'ahead':
         s = s_at(tt)
-        a, b = at_s(s), at_s(s + 2.0)
+        a, b = at_s(s), at_s(s + 3.5)
         if (b - a).length < 0.3:                  # at the end of the path: keep the last walking direction
-            a = at_s(s - 2.0)
+            a = at_s(s - 3.5)
             b = at_s(s)
         yaw = math.atan2(b.y - a.y, b.x - a.x)
         return yaw, math.radians(spec_[1])
@@ -287,6 +293,30 @@ def gaze_at(tt, eye):
             dy = (yb - ya + math.pi) % (2 * math.pi) - math.pi
             return ya + dy * w, pa + (pb - pa) * w
     return resolve(GAZE[-1][1], tt, eye)
+
+
+def gaze_track(n_frames, fps=FPS):
+    """per-frame (yaw, pitch): the eased key targets followed by a critically damped spring with a speed limit, so
+    the view always drifts like a turning head; returns the track and its peak angular speeds (deg/s)"""
+    dt = 1.0 / fps
+    eye0, _ = pos_at(0.0)
+    y, p = gaze_at(0.0, eye0)
+    vy = vp = 0.0
+    out, peak = [], [0.0, 0.0]
+    for f in range(n_frames):
+        tt = f * dt
+        eye, _ = pos_at(tt)
+        ty, tp = gaze_at(tt, eye)
+        ey = (ty - y + math.pi) % (2 * math.pi) - math.pi
+        vy += (GAZE_W ** 2 * ey - 2 * GAZE_W * vy) * dt
+        vp += (GAZE_W ** 2 * (tp - p) - 2 * GAZE_W * vp) * dt
+        my, mp = math.radians(MAX_YAW_RATE), math.radians(MAX_PITCH_RATE)
+        vy, vp = max(-my, min(my, vy)), max(-mp, min(mp, vp))
+        y += vy * dt
+        p += vp * dt
+        peak = [max(peak[0], abs(math.degrees(vy))), max(peak[1], abs(math.degrees(vp)))]
+        out.append((y, p))
+    return out, peak
 
 
 def camera_quat(yaw, pitch):
@@ -351,6 +381,9 @@ def write_plan(path):
 
 # ---------------------------------------------------------------- main
 print(f'WALKTHROUGH path {L_TOTAL:.1f} m, duration {T_TOTAL:.1f} s, {int(round(T_TOTAL * FPS))} frames at {FPS} fps')
+TRACK, PEAK = gaze_track(int(round(T_TOTAL * FPS)))
+print(f'WALKTHROUGH last walk starts at {T_END_MOVE:.1f} s (frame {int(T_END_MOVE * FPS) + 1})')
+print(f'WALKTHROUGH peak turning speed: yaw {PEAK[0]:.1f} deg/s, pitch {PEAK[1]:.1f} deg/s')
 print('WALKTHROUGH clearances (min, m): ' + ', '.join(f'{k} {v:.2f}' for k, v in clearances().items()))
 write_plan(os.path.join(HERE, 'video', 'path_plan.svg'))
 
@@ -368,7 +401,7 @@ if PRESET in PRESETS:
     for f in range(1, n_frames + 1):
         tt = (f - 1) / FPS
         eye, _ = pos_at(tt)
-        q = camera_quat(*gaze_at(tt, eye))
+        q = camera_quat(*TRACK[f - 1])
         if q_prev is not None and q.dot(q_prev) < 0:
             q = -q
         q_prev = q
