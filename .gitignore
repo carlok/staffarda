@@ -10,3 +10,8 @@ blender/compare/
 
 .DS_Store
 __pycache__/
+
+# walkthrough video frames and encodes (heavy); the path plan SVG is tracked
+blender/video/preview/
+blender/video/final/
+*.mp4

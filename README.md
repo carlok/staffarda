@@ -30,6 +30,7 @@ perspective in the photos and are good to about 10-15 %.
 | `blender/render.py` | Renders the cameras placed where the photos were taken, plus an overview and a door view. |
 | `blender/render_hero.py` | One 4K still from standing eye height. |
 | `blender/compare.py` | Photo-next-to-render comparison images. |
+| `blender/walkthrough.py` | Renders a walkthrough video: in through the doorway and a slalom between the columns, with stops to look around. Route in `blender/video/path_plan.svg`. |
 | `blender/walk.py` | Opens the model in Blender with real-time lighting and starts first-person walk mode at the doorway. |
 | `blender/structural_check.py` | A first-order thrust-line check of the vault and its supports, reading its dimensions from the build script. Output in `blender/structural_report.txt`. |
 | `blender/README.md` | The detailed notes: what is modelled, how the numbers were estimated, what is guessed, the lighting and colour matching, the structural check and walk mode. |

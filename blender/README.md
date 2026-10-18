@@ -12,6 +12,7 @@ from what the photos show, then cameras are placed where the photos were taken s
 | `compare.py` | Writes photo-vs-render side-by-sides to `compare/` |
 | `structural_check.py` | Thrust-line check of the vault and its supports; reads its dimensions straight from `build_foresteria.py`. Output in `structural_report.txt`. |
 | `render_hero.py` | One-off high-quality still from standing eye height (1.6 m). `final` = 3840x2160, 16-bit, 800 samples + denoise, about 11 min on this Mac. |
+| `walkthrough.py` | Renders the walkthrough video (EEVEE, walk-mode look): slalom between the columns with stops. See "Walkthrough video". |
 | `walk.py` | Opens the model in the Blender GUI with real-time EEVEE lighting and starts Walk Navigation at the doorway. See "Walking through it". |
 | `renders/` | Final Cycles renders (1600 px long side, 160 samples, denoised) and the 4K hero; `walk_eevee_*.png` and `walk_vs_cycles_F.jpg` are the EEVEE test renders from `walk.py` (made before the lighting, stone, capital and arch changes) |
 | `compare/` | Original photo on the left, render on the right |
@@ -250,4 +251,26 @@ Limits: it is a 2D slice analysis with a simplified load distribution, assumed d
 action, and the upper-floor arrangement is a guess. It tells you the proportions are plausible; it is not a
 substitute for a survey and an engineer.
 
+## Walkthrough video
+
+`walkthrough.py` renders a visitor's walk at standing eye height (1.6 m), 24 mm lens, about 1 m/s with eased
+starts and stops, a slight head bob and motion blur, in EEVEE with the walk-mode look (`walk.py`). The route
+(`video/path_plan.svg`): in through the open right-wall doorway, round the far side of column 4, then a slalom past
+columns 3, 2 and 1, stopping at each to look around (capital, ribs and keystone; the right wall and a base; a window
+with its steps and a corbel; the near keystone and column 1's broken base), and at the near end a turn back into
+the long view of the hero render. 35 m, about 65 s, at least 1.3 m from every column axis and 1.1 m from the walls.
+
+```bash
+B=/Applications/Blender.app/Contents/MacOS/Blender
+$B -b foresteria.blend --python walkthrough.py -- plan       # path diagram and timing only
+$B -b foresteria.blend --python walkthrough.py -- preview    # 640x360, 12 fps, ~18 min
+caffeinate -i $B -b foresteria.blend --python walkthrough.py -- final   # 1920x1080, 24 fps, 40 samples, ~4 h
+```
+
+Frames go to `video/<preset>/` and are skipped when they exist, so an interrupted render resumes by running the same
+command again (a frame cut off mid-render is redone). While the Mac sleeps nothing renders; Blender just pauses and
+continues on wake. `caffeinate -i` keeps the Mac from idle-sleeping during the render (closing a laptop lid still
+sleeps it). When all frames exist the script encodes `video/walkthrough_<preset>.mp4` with ffmpeg. Frames and MP4s
+are not tracked in git. Measured on this Mac at 1080p: about 8.5 s per frame at 40 samples (64 samples: 14 s,
+differing by under one 8-bit level on average).
 
