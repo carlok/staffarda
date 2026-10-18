@@ -2,8 +2,10 @@
 One-off hero shot(s) from inside the hall at standing eye height.
 
   Blender -b foresteria.blend --python render_hero.py -- <preset> <view> [<view> ...]
-  preset: test | final
+  preset: test | final | preview
   view:   a key of VIEWS below
+A final render of view F (no TAG) also refreshes ../docs/preview.jpg, the 1600 px picture at the top of the
+repo README. `preview` only rebuilds that picture from an existing renders/hero_F_final.png.
 Env: EXPOSURE (default 2.6), HAZE (dust density, 0 = off), TAG (file suffix)
 """
 import bpy, sys, os, math
@@ -12,6 +14,28 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(bpy.data.filepath))
 argv = sys.argv[sys.argv.index('--') + 1:]
 preset, views = argv[0], argv[1:]
+PREVIEW = os.path.join(os.path.dirname(HERE), 'docs', 'preview.jpg')
+
+
+def write_preview(src, width=1600):
+    """keep the README's picture current: a 1600 px JPEG copy of the final hero render"""
+    try:
+        os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
+        im = bpy.data.images.load(src)
+        im.scale(width, round(width * im.size[1] / im.size[0]))
+        im.filepath_raw = PREVIEW
+        im.file_format = 'JPEG'
+        im.save(quality=82)
+        bpy.data.images.remove(im)
+        print('PREVIEW', PREVIEW)
+    except Exception as exc:
+        print('render_hero.py: could not write the README preview (%s)' % exc)
+
+
+if preset == 'preview':
+    for v in views or ['F']:
+        write_preview(os.path.join(HERE, 'renders', f'hero_{v}_final.png'))
+    sys.exit(0)
 
 EYE = 1.60   # average standing eye height, metres
 
@@ -116,3 +140,5 @@ for v in views:
     sc.render.filepath = out
     bpy.ops.render.render(write_still=True)
     print('RENDERED', out)
+    if preset == 'final' and v == 'F' and not tag:
+        write_preview(out)
