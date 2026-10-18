@@ -31,7 +31,10 @@ python3 structural_check.py > structural_report.txt
 ## What is modelled
 
 - Hall of 2 naves x 5 square bays, 4 round stone columns on the centre line (base, shaft with a little
-  entasis and irregularity, iron tie band on the first one). The shaft stone is a light warm grey with faint rust.
+  entasis and irregularity, iron tie band on the first one). The shaft stone is a light olive grey.
+- The four bases differ too (`BASE_STYLES`, `column_base()`), from crops of photos 1 and 2: 1 a rough, broken drum
+  of lumpy blocks with rust staining; 2 a straight drum with a fillet ring under the shaft; 3 a lower drum with a
+  chamfered top; 4 a taller lumpy drum with a flat ledge.
 - The four capitals differ, as in photos 1 and 2 (`CAPITAL_STYLES`, `capital()`), counting from the entrance end:
   1 a plain round cushion under a thick octagonal slab (darker stone); 2 a bell with eight broad leaves curling
   out under the slab corners; 3 a flared octagonal bell with flat carved panels; 4 a drum with a band of small
@@ -40,7 +43,12 @@ python3 structural_check.py > structural_report.txt
   start. A taller 1.5 m version looked much heavier than the real capitals in photos 1 and 2 and was dropped. A
   small notch is still visible where two ribs part above the near capital in the hero view.
 - Pointed brick rib vault: 10 bays, each with two round-nosed diagonal ribs, transverse/longitudinal
-  arches and wall arches, domed plaster cells, a rosette keystone per bay. Brick courses come from a
+  arches and wall arches, domed plaster cells, a rosette keystone per bay. The ribs spring at 2.5 m from the
+  columns but higher on the side walls, from smaller corbels, as measured on photo 1 with the calibrated camera:
+  `HS_WALL_L` = 2.65 m on the left wall (corbel tops measured 2.63-2.65 m), `HS_WALL_R` = 2.95 m on the right
+  (2.86-3.04 m). The crowns and keystones stay where they were; only the wall-side haunches are shallower
+  (`spring_z()`, `arch_z()`). Left-wall corbels are stepped moulded blocks (0.30 x 0.40 x 0.36 m), right-wall ones
+  rounded cushions (0.34 x 0.44 x 0.40 m), the end walls' middle corbels small blocks at 2.5 m. Brick courses come from a
   procedural shader driven by arc length along each rib: bricks vary from deep red to pale buff, with bold
   white lime joints. The square-section arches are brick only on the soffit; above the springer blocks their
   sides are plastered like the cells, which gives the light/red banding seen in the photos. Lower down, where
@@ -53,20 +61,41 @@ python3 structural_check.py > structural_report.txt
   (`floor_bricks()`, `FLOOR_BRICK_W`) with worn chamfered edges, small random twist, tilt and size, over a
   dusty mortar bed (the `floor` object). Each brick carries two random attributes that pick its tone, from
   dark red-tan to pale worn beige; large dust patches, scuffs and pits sit on top.
-- Walls in pale cream-grey lime plaster with grey weathering, damp at the foot and a few exposed brick patches.
+- Walls in pale cream-to-ochre lime plaster, weathered as in the photos (see "Weathering" below).
 - Lighting: sun and sky through the openings, plus eight uplights on the capitals at `UPLIGHT_W` = 120 W each,
   and a copper conduit along the right wall.
 - Colour and brightness were matched by measuring the same regions in the photos and in renders from the
-  matching cameras (renders at exposure 2.6). Against photo 2: walls about 0.9 of the photo's brightness, floor
-  0.87, column 1.04, vault 1.04; the walls' red/blue ratio is 1.38 against the photo's 1.26 (against photo 1:
-  walls 0.84, floor 0.95, red/blue 2.06 against 2.0). The photos are phone shots with automatic exposure and
-  processing, so these are targets for the look, not physical measurements.
+  matching cameras (renders at exposure 2.6). Against photo 2: walls about 0.82 of the photo's brightness, floor
+  0.90, column 1.00, vault 0.99; against photo 1: walls 0.90, floor 0.98. The rendered floor is still less
+  yellow than in the photos (red/blue about 1.3-1.6 against 1.7-1.8). The photos are phone shots with automatic
+  exposure and processing, so these are targets for the look, not physical measurements.
+
+### Weathering
+
+Every material kind has its own procedural noise (Blender's Perlin-based Noise Texture plus Voronoi cells), tuned
+against close-ups of the photos:
+- **Walls**: lobed patches where the plaster has fallen off (about a quarter of the wall between 0.6 and 3 m,
+  `LOSS_T`), showing older brown plaster and faint rubble, with a shadowed broken edge and a bump step; brown
+  mottling, grey-brown weathering, vertical water streaks, a damp tide mark at the foot, stucco grain.
+- **Vault plaster**: rose and ochre blotches, sooty patches, a fine dark speckle and sandy grain (photo 3), trowel
+  undulation in the bump.
+- **Brick ribs**: per-brick tone and mottling, pores, chipped spots showing a paler core (ridged noise), lime smears,
+  soot, mortar from clean lime to dirty with joints recessed by varying depth.
+- **Stone** (columns, bases, capitals, corbels, steps, keystones): crystal speckle, large pale lime/lichen patches
+  and darker olive damp ones, vertical streaks, a few hairline cracks, grime toward the floor, a per-object noise
+  offset; rust only at the first column's foot.
+- **Floor**: every brick has its own mottling and firing marks, pits, worn dips in the bump, dust in large patches
+  and filling the shallow joints, a lighter worn path down the middle of each nave.
+
+Masks are written as quantiles of the noise (`nq()`): Blender's normalised Noise Texture has a median of 0.5 and a
+standard deviation of only about 0.06 (measured), so "the top 25 %" is `nq(0.75)` = 0.54. Height masks use a clamped
+linear helper (`NB.lin`), because ColorRamp clamps its stop positions to 0..1.
 - The room is **empty by default**. The chairs, tables and fire extinguishers from the photos are in
   `furniture()`; build with `FURNITURE=1` to get them, in `foresteria_furnished.blend`.
 - Right wall: two arched doorways at y = 18.5 m and 20.1 m (`DOOR_CENTRES`). The first has a plank door with iron straps,
   hinged on its -y jamb and swung 68 degrees into the room (`door(c, ajar_deg)`); the second is left open.
   Both have a stone threshold flush with the floor, so you can walk straight in from the ground outside.
-  They are kept clear of the corbels where the ribs spring (1.45 m and 0.65 m with the 0.60 m corbels) with 2+ m
+  They are kept clear of the corbels where the ribs spring (1.53 m and 0.73 m with the 0.44 m right-wall corbels) with 2+ m
   of masonry over the heads; an earlier position at y = 21.35 m cut the wall right under a corbel and was moved.
 - Sun lamp + sky through the openings; the sun is on the -X (left wall) side.
 
@@ -82,12 +111,14 @@ couple of percent of their image positions in photo 1.
 ## Guessed or not in the photos
 
 - Absolute scale (+/- 10-15%). Not surveyed.
-- Vault heights: springing at 2.5 m, arch crowns about 5.5 m, keystones about 6.4 m. Photo 3 only shows the
-  arch shape from below, so rib profiles are eyeballed.
+- Vault heights: springing at 2.5 m on the columns (2.65 / 2.95 m on the walls, measured), arch crowns about 5.5 m,
+  keystones about 6.4 m. Photo 3 only shows the arch shape from below, so rib profiles are eyeballed. The right-wall
+  corbel at y = 16.2 m, near the edge of photo 1, measured higher still (about 3.6 m); I treated that reading as
+  unreliable and used the other right-wall corbels.
 - Wall thickness (1.2 m, checked against the thrust: at least 0.95 m needed), the near end wall (mirrors the far one; never photographed), the right wall away from
   the doors, the exterior (flat ground plane).
-- Not modelled: window sill steps, cameras and the gilded frame on the right wall, the carved details of the
-  capitals, individual stones and bricks (the floor and walls are shader patterns, not scans).
+- Not modelled: cameras and the gilded frame on the right wall, the carved details of the capitals and corbels,
+  individual wall stones (the walls are shader patterns, not scans).
 - Materials are procedural. The render is a plausible reconstruction, not a photoreal match.
 
 ## Cameras in the .blend
@@ -195,6 +226,13 @@ What the first version of the model got wrong, and what was changed (all in `bui
 - Diagonal ribs, 32 cm deep, are only marginal without backing (GFS 1.01) and fine with it (1.48) or with the floor on fill (1.58).
   The haunch backing is not modelled (it is behind the visible surface); it is assumed.
 - Doorways moved clear of the corbels (see above).
+- Wall springing raised to the measured 2.65 / 2.95 m with smaller corbels. The check now analyses the wall-side
+  half of each arch and diagonal separately (smaller rise) and requires a crown thrust both halves accept: they
+  overlap (diagonal 12.5-13.2 kN, transverse 16.5-19.5 kN in case A1), wall-side GFS 1.17-1.81. The thrust acts
+  higher on the wall: the 1.2 m wall still passes (F = 1.96-2.22 in case B; minimum 1.15 m).
+- A corbel this small cracks if it has to carry the whole springing load as a cantilever (bending tension 8.2 MPa
+  in case B, 2.2 MPa in A1). It works only if the springer's courses are bonded into the wall (tas-de-charge),
+  the usual medieval detail; then it carries about 59 kN and 0.9 MPa. The report gives both cases.
 
 Remaining numbers: interior columns carry ~1.3 MPa (case A1) or ~4.4 MPa (case B), well below the crushing strength of
 stone but the highest stress in the building. The web-load split between diagonals and side arches changes the

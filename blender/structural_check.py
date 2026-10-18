@@ -46,7 +46,9 @@ WALL_T = float(sys.argv[1]) if len(sys.argv) > 1 else M['WALL_T']
 W_TRANS, W_DIAG, W_WALL = M['W_TRANS'], M['W_DIAG'], M['W_WALL']
 D_VIS_BIG, D_VIS_DIAG, D_VIS_WALL = M['D_BELOW_BIG'], M['D_BELOW_DIAG'], M['D_BELOW_WALL']   # hang below the web
 D_HID = M['D_ABOVE']                                       # masonry above the web line
-CORBEL = tuple(M['CORBEL'])                                # projection, width, height of the wall corbels (m)
+HS_WALL_L, HS_WALL_R = M['HS_WALL_L'], M['HS_WALL_R']      # wall springing: higher than the columns (photo 1)
+HS_WALL = max(HS_WALL_L, HS_WALL_R)                        # the higher one is the worse case (flatter wall-side halves, longer lever)
+CORBEL = tuple(M['CORBEL_R'])                              # projection, width, height of the larger wall corbel (m)
 DOOR_CENTRES, DOOR_W, DOOR_TOP = M['DOOR_CENTRES'], M['DOOR_W'], M['DOOR_TOP']
 HAUNCH_BACKING = HS + 2.0                                  # masonry backing of the haunches up to this level (m)
 WEB_AREA_RATIO = 1.78                                      # web surface / plan area, measured on the mesh
@@ -62,6 +64,7 @@ ASSUME = dict(
     fill_top=HK + 0.30,    # m, level of the upper floor above the ground-floor floor
     share_side=0.40,       # share of each web patch + fill carried by the side arch
     share_diag=0.60,       # share carried by the two diagonals (together)
+    corbel_share=0.10,     # tas-de-charge case: share of the springing load that still bears on the corbel
 )
 G_B = ASSUME['gamma_brick']
 
@@ -79,8 +82,9 @@ def prof(x, a, r):
 
 # ---------------------------------------------------------------- one half arch, crown -> springing
 class Arch:
-    def __init__(self, name, a, rise, t_geo, A_rib, b_trib, n=80, shape='uniform'):
+    def __init__(self, name, a, rise, t_geo, A_rib, b_trib, n=80, shape='uniform', z0=None):
         self.name, self.a, self.rise, self.t = name, a, rise, t_geo
+        self.z0 = HS if z0 is None else z0                 # springing level of this half
         self.A_rib, self.b_mean, self.shape = A_rib, b_trib, shape
         self.pts = []
         for i in range(n + 1):
@@ -112,10 +116,10 @@ class Arch:
             q_web = ASSUME['web_t'] * G_B * WEB_AREA_RATIO
             w += q_web * self.b_at(xm) * dx
             if haunch is not None and case != 'floor':
-                depth = max(haunch - (HS + ym), 0.0)
+                depth = max(haunch - (self.z0 + ym), 0.0)
                 w += G_B * depth * self.b_at(xm) * dx
             if case == 'floor':
-                z = HS + ym
+                z = self.z0 + ym
                 depth = max(ASSUME['fill_top'] - z, 0.0)
                 w += (ASSUME['gamma_fill'] * depth + ASSUME['floor_dead'] + ASSUME['floor_live']) * self.b_at(xm) * dx
             out.append(w)
@@ -209,6 +213,10 @@ def build_arches():
         'diagonal rib': Arch('diagonal rib', A_D, R_DIAG, t_diag, A_diag, b_diag, shape='tri'),
         'transverse arch': Arch('transverse arch', S / 2, R_SIDE, D_VIS_BIG + D_HID, A_trans, b_side, shape='parab'),
         'wall arch': Arch('wall arch', S / 2, R_SIDE, D_VIS_WALL + D_HID, A_wall, b_side / 2, shape='parab'),
+        # the halves that spring from the (higher) wall corbels: same crown, smaller rise
+        'diagonal rib, wall side': Arch('diagonal rib, wall side', A_D, HK - HS_WALL, t_diag, A_diag, b_diag, shape='tri', z0=HS_WALL),
+        'transverse arch, wall side': Arch('transverse arch, wall side', S / 2, HS + R_SIDE - HS_WALL, D_VIS_BIG + D_HID, A_trans, b_side,
+                                           shape='parab', z0=HS_WALL),
     }
     return arches
 
@@ -223,21 +231,31 @@ def analyse(case, verbose=True, haunch=None):
         tm = t_min(ar, W)
         res[name] = dict(V=V_spring, rng=rng, tmin=tm, t=ar.t, arch=ar, W=W)
         if verbose and name == 'wall arch':
-            print(f"  {name:16s} (sits in the wall mass, not a free arch)  V={V_spring:6.0f} kN/end")
+            print(f"  {name:26s} (sits in the wall mass, not a free arch)  V={V_spring:6.0f} kN/end")
         elif verbose:
             if rng:
-                print(f"  {name:16s} t={ar.t*100:4.0f} cm  V={V_spring:6.0f} kN/end  H {rng[0]:6.1f}..{rng[1]:6.1f} kN  "
+                print(f"  {name:26s} t={ar.t*100:4.0f} cm  V={V_spring:6.0f} kN/end  H {rng[0]:6.1f}..{rng[1]:6.1f} kN  "
                       f"t_min={tm*100:5.1f} cm  GFS={ar.t/tm:4.2f}")
             else:
-                print(f"  {name:16s} t={ar.t*100:4.0f} cm  V={V_spring:6.0f} kN/end  NO stable thrust line in the section  "
+                print(f"  {name:26s} t={ar.t*100:4.0f} cm  V={V_spring:6.0f} kN/end  NO stable thrust line in the section  "
                       f"(needs t >= {tm*100:.0f} cm)")
     return res
 
 
 # ---------------------------------------------------------------- supports
+def common(r1, r2):
+    """crown thrusts both halves of an arch accept (the crown thrust is shared)"""
+    if not r1 or not r2:
+        return None
+    lo, hi = max(r1[0], r2[0]), min(r1[1], r2[1])
+    return (lo, hi) if lo <= hi else None
+
+
 def supports(res, case):
     Vd, Vs, Vw = res['diagonal rib']['V'], res['transverse arch']['V'], res['wall arch']['V']
-    rd, rs = res['diagonal rib']['rng'], res['transverse arch']['rng']
+    Vd_w, Vs_w = res['diagonal rib, wall side']['V'], res['transverse arch, wall side']['V']
+    rd = common(res['diagonal rib']['rng'], res['diagonal rib, wall side']['rng'])
+    rs = common(res['transverse arch']['rng'], res['transverse arch, wall side']['rng'])
     out = {}
     # interior column
     shaft = math.pi * 0.31 ** 2 * 2.2 * ASSUME['gamma_stone']
@@ -247,14 +265,22 @@ def supports(res, case):
     A_sh = math.pi * 0.30 ** 2
     out['column_N'] = N
     out['column_sigma'] = N / A_sh / 1000
-    # wall corbel at an interior cusp
-    Vc = Vs + 2 * Vd + 2 * Vw
+    # wall corbel at an interior cusp: the wall-side halves of one transverse arch and two diagonals, two wall arches
+    Vc = Vs_w + 2 * Vd_w + 2 * Vw
     out['corbel_V'] = Vc
+    out['ranges'] = (rd, rs)
     bearing = CORBEL[0] * CORBEL[1]
-    out['corbel_bearing'] = Vc / bearing / 1000
     arm = CORBEL[0] / 2
     Z = CORBEL[1] * CORBEL[2] ** 2 / 6
+    # (a) the whole springing load sits on the corbel as a cantilever
+    out['corbel_bearing'] = Vc / bearing / 1000
     out['corbel_bending'] = Vc * arm / Z / 1000
+    # (b) tas-de-charge: the springer's horizontal courses are bonded into the wall, so the rib load goes into the
+    #     wall and the corbel carries only the projecting springer block plus a small share (ASSUME['corbel_share'])
+    proj_block = 0.40 * 0.56 * 0.56 * G_B
+    Vb = proj_block + ASSUME['corbel_share'] * Vc
+    out['corbel_V_bonded'] = Vb
+    out['corbel_bending_bonded'] = Vb * arm / Z / 1000
     # outward horizontal force on the wall at the corbel: 2 diagonals at 45deg + the transverse arch
     def Hout(i):
         if not rd or not rs:
@@ -265,9 +291,9 @@ def supports(res, case):
 
 
 def wall_check(sup, t_w):
-    """overturning of the wall strip (width S) below one corbel; thrust at z = HS"""
+    """overturning of the wall strip (width S) below one corbel; thrust at the wall springing z = HS_WALL"""
     Vc = sup['corbel_V']
-    h = HS
+    h = HS_WALL
     W_wall = S * t_w * (h + 0.8) * G_B          # wall to springing plus a share of the lunette masonry
     out = {}
     for label, H in (('H_min', sup['H_min']), ('H_max', sup['H_max'])):
@@ -299,14 +325,23 @@ def wall_min_thickness(sup, F_min=2.0, F_max=1.3):
 def report(case, title, haunch=None, show_wall=True):
     print(f"\n=== {title} ===")
     res = analyse(case, haunch=haunch)
-    free = [res['diagonal rib'], res['transverse arch']]
+    free = [res[k] for k in ('diagonal rib', 'transverse arch', 'diagonal rib, wall side', 'transverse arch, wall side')]
     ok = all(r['rng'] for r in free)
     sup = supports(res, case) if ok else None
     if not ok:
         print("  -> the free arches are not stable in these sections: supports not evaluated")
         return res, None
+    rd, rs = sup['ranges']
+    for nm, r in (('diagonal rib', rd), ('transverse arch', rs)):
+        print(f"  {nm}: crown thrust both halves accept: " + (f"{r[0]:.1f}..{r[1]:.1f} kN" if r else
+              "NONE (the halves need different thrusts; the crown would shift toward the wall, not modelled)"))
+    if not (rd and rs):
+        return res, None
     print(f"  interior column: N = {sup['column_N']:.0f} kN -> {sup['column_sigma']:.2f} MPa on the shaft")
-    print(f"  wall corbel: V = {sup['corbel_V']:.0f} kN, bearing {sup['corbel_bearing']:.2f} MPa, bending tension at the wall face {sup['corbel_bending']:.2f} MPa")
+    print(f"  wall corbel {CORBEL[0]:.2f} x {CORBEL[1]:.2f} x {CORBEL[2]:.2f} m: springing load V = {sup['corbel_V']:.0f} kN")
+    print(f"    (a) all of it on the corbel: bearing {sup['corbel_bearing']:.2f} MPa, bending tension {sup['corbel_bending']:.2f} MPa")
+    print(f"    (b) springer bonded into the wall (tas-de-charge), corbel carries {sup['corbel_V_bonded']:.0f} kN: "
+          f"bending tension {sup['corbel_bending_bonded']:.2f} MPa")
     print(f"  outward force on the wall per corbel: {sup['H_min']:.0f} kN (minimum equilibrium) .. {sup['H_max']:.0f} kN (maximum)")
     if show_wall:
         wc = wall_check(sup, WALL_T)
@@ -331,7 +366,7 @@ def openings_check():
 
     def wall_top(y):                     # top of the wall under the lunette arch of the bay containing y
         yc = (min(int(y // S), NY - 1) + 0.5) * S
-        return HS + prof(y - yc, S / 2, R_SIDE)
+        return HS_WALL_R + (HS + R_SIDE - HS_WALL_R) * prof(y - yc, S / 2, R_SIDE) / R_SIDE
 
     for c in DOOR_CENTRES:
         lo, hi = c - DOOR_W / 2, c + DOOR_W / 2
@@ -348,14 +383,16 @@ def sensitivity(case, haunch):
         ASSUME['share_diag'], ASSUME['share_side'] = sd, 1 - sd
         r = analyse(case, verbose=False, haunch=haunch)
         g = gfs(r)
-        print(f"    diagonals {sd*100:.0f}% / side arches {100-sd*100:.0f}%: GFS diagonal {g['diagonal rib']:.2f}, transverse {g['transverse arch']:.2f}")
+        print(f"    diagonals {sd*100:.0f}% / side arches {100-sd*100:.0f}%: GFS diagonal {g['diagonal rib']:.2f} "
+              f"(wall side {g['diagonal rib, wall side']:.2f}), transverse {g['transverse arch']:.2f} (wall side {g['transverse arch, wall side']:.2f})")
     ASSUME['share_diag'], ASSUME['share_side'] = old
 
 
 if __name__ == '__main__':
     self_test()
     print(f"\nDESIGN VALUES: transverse arch depth {(D_VIS_BIG + D_HID)*100:.0f} cm, diagonal rib {(D_VIS_DIAG + D_HID)*100:.0f} cm, "
-          f"wall {WALL_T:.2f} m, corbel {CORBEL[0]:.2f} x {CORBEL[1]:.2f} x {CORBEL[2]:.2f} m, haunch backing to {HAUNCH_BACKING:.1f} m")
+          f"wall {WALL_T:.2f} m, corbel {CORBEL[0]:.2f} x {CORBEL[1]:.2f} x {CORBEL[2]:.2f} m, haunch backing to {HAUNCH_BACKING:.1f} m, "
+          f"springing {HS:.2f} m at the columns, {HS_WALL_L:.2f} / {HS_WALL_R:.2f} m on the left / right wall (checked: {HS_WALL:.2f})")
     openings_check()
     report('vault', 'CASE A1: vault only, haunches backed with masonry up to %.1f m' % HAUNCH_BACKING, haunch=HAUNCH_BACKING)
     sensitivity('vault', HAUNCH_BACKING)

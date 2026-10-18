@@ -62,12 +62,16 @@ $B foresteria.blend --python walk.py                    # WASD + mouse, Shift fa
 ## The model in short
 
 - Hall of 2 naves x 5 square bays, about 10.8 x 27 m, springing at 2.5 m, keystones about 6.4 m up.
-- Four round columns with different capitals (plain cushion, leaves, octagonal panels, a band of teeth).
+- Four round columns with different capitals (plain cushion, leaves, octagonal panels, a band of teeth) and
+  different bases.
+- Ribs spring higher on the side walls than on the columns, from small corbels, as measured on the photos.
 - Pointed brick rib vault with round diagonal ribs, brick soffits with white lime joints, plastered sides and
   cells, and a rosette keystone in each bay.
 - Pale lime-plastered walls with splayed arched windows and stone sill steps, oculi in the end walls, two
   doorways in the right wall (one with a plank door).
 - Herringbone floor of about 7,800 individual worn cotto bricks.
+- Each material has its own procedural weathering (Perlin and Voronoi noise): flaking wall plaster, stained and
+  speckled vault plaster, mottled and chipped bricks, blotchy gneiss columns, a dusty floor.
 - Colours and brightness were matched to the photos by measuring the same regions in photo and render.
 - Proportions were checked with a first-order thrust-line analysis, and the model was adjusted where it failed.
   This is a plausibility check, not an engineering assessment.
