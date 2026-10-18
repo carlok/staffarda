@@ -16,3 +16,5 @@ blender/video/preview/
 blender/video/final/
 *.mp4
 blender/video/*.log
+
+tmp/

@@ -80,3 +80,8 @@ $B foresteria.blend --python walk.py                    # WASD + mouse, Shift fa
   This is a plausibility check, not an engineering assessment.
 
 See [`blender/README.md`](blender/README.md) for the details and the known limitations.
+
+## Licence
+
+Code (`*.py`) is MIT; renders, images and documentation are CC BY 4.0. See [LICENSE](LICENSE) and
+[LICENSE-CC-BY-4.0.md](LICENSE-CC-BY-4.0.md). The source photos are not included.
