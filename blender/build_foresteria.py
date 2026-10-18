@@ -234,7 +234,8 @@ def flat(name, color, rough=0.6, metallic=0.0):
 
 def mat_plaster_wall():
     b = NB('plaster_wall')
-    cream, ochre = (0.58, 0.46, 0.30), (0.50, 0.37, 0.20)
+    # pale cream-grey lime plaster, measured against photos 1 and 2 (was a saturated ochre)
+    cream, ochre = (0.80, 0.78, 0.63), (0.70, 0.64, 0.43)
     big = b.noise(0.30, 6, 0.6)
     mid = b.noise(1.8, 7, 0.55)
     fine = b.noise(28, 4, 0.6)
@@ -242,21 +243,21 @@ def mat_plaster_wall():
     # weathered grey-green patches where render has flaked / damp creeps up
     worn_mask = b.math('MULTIPLY', b.val(b.ramp(mid, [(0.50, 0), (0.63, 1)])),
                        b.val(b.ramp(big, [(0.36, 0), (0.55, 1)])))
-    col = b.mix(worn_mask, tone, (0.33, 0.31, 0.26))
+    col = b.mix(worn_mask, tone, (0.46, 0.49, 0.46))
     # exposed brick patches
     bm_ = b.val(b.ramp(b.noise(1.1, 3, 0.5, vec=b.coord('Object')), [(0.70, 0), (0.715, 1)]))
-    col = b.mix(bm_, col, (0.30, 0.13, 0.08))
+    col = b.mix(bm_, col, (0.40, 0.22, 0.14))
     # damp / grime at the foot of the wall
     z = b.zcoord()
     damp = b.val(b.ramp(z, [(0.0, 0.75), (1.1, 0.0)]))
-    col = b.mix(b.math('MULTIPLY', damp, b.val(b.ramp(mid, [(0.3, 0.4), (0.7, 1.0)]))), col, (0.22, 0.20, 0.15))
+    col = b.mix(b.math('MULTIPLY', damp, b.val(b.ramp(mid, [(0.3, 0.4), (0.7, 1.0)]))), col, (0.30, 0.29, 0.25))
     col = b.mul(col, b.ramp(fine, [(0.3, 0.8), (0.7, 1.05)]), 0.6)
     return b.finish(col, 0.92, b.bump(fine, 0.35, 0.03))
 
 
 def mat_plaster_vault():
     b = NB('plaster_vault')
-    cream, rosy, ochre = (0.80, 0.66, 0.48), (0.77, 0.57, 0.43), (0.64, 0.46, 0.23)
+    cream, rosy, ochre = (0.72, 0.60, 0.45), (0.69, 0.52, 0.40), (0.58, 0.42, 0.22)
     big = b.noise(0.45, 6, 0.6, dist=0.5)
     mid = b.noise(2.2, 6, 0.6)
     fine = b.noise(40, 3, 0.6)
@@ -363,11 +364,11 @@ def make_materials():
     MAT['floor_bricks'] = mat_floor_bricks()
     MAT['rib'] = mat_brick_rib()
     MAT['springer'] = mat_brick_rib(use_z=True)
-    MAT['col'] = mat_stone('column_stone', (0.58, 0.54, 0.42), (0.70, 0.66, 0.52), rust_amt=0.4, rust_col=(0.30, 0.21, 0.14))   # light warm grey stone (photo 2), faint rust
-    MAT['cap_plain'] = mat_stone('capital_plain', (0.46, 0.42, 0.34), (0.56, 0.52, 0.42), rust=False)   # darker, column 1
-    MAT['cap_leaf'] = mat_stone('capital_leaf', (0.60, 0.56, 0.45), (0.71, 0.67, 0.55), rust=False)
-    MAT['cap_panel'] = mat_stone('capital_panel', (0.61, 0.56, 0.45), (0.72, 0.67, 0.55), rust=False)
-    MAT['cap_teeth'] = mat_stone('capital_teeth', (0.69, 0.65, 0.54), (0.79, 0.76, 0.65), rust=False)   # palest, column 4
+    MAT['col'] = mat_stone('column_stone', (0.54, 0.50, 0.39), (0.65, 0.61, 0.48), rust_amt=0.4, rust_col=(0.30, 0.21, 0.14))   # light warm grey stone (photo 2), faint rust
+    MAT['cap_plain'] = mat_stone('capital_plain', (0.43, 0.39, 0.32), (0.52, 0.48, 0.39), rust=False)   # darker, column 1
+    MAT['cap_leaf'] = mat_stone('capital_leaf', (0.56, 0.52, 0.42), (0.66, 0.62, 0.51), rust=False)
+    MAT['cap_panel'] = mat_stone('capital_panel', (0.57, 0.52, 0.42), (0.67, 0.62, 0.51), rust=False)
+    MAT['cap_teeth'] = mat_stone('capital_teeth', (0.64, 0.60, 0.50), (0.73, 0.70, 0.60), rust=False)   # palest, column 4
     MAT['corbel'] = mat_stone('corbel_stone', (0.42, 0.37, 0.28), (0.48, 0.42, 0.32), rust=False)
     MAT['ground'] = mat_ground()
     MAT['iron'] = flat('iron', (0.03, 0.03, 0.03), 0.5, 0.8)

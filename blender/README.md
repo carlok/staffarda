@@ -53,11 +53,14 @@ python3 structural_check.py > structural_report.txt
   (`floor_bricks()`, `FLOOR_BRICK_W`) with worn chamfered edges, small random twist, tilt and size, over a
   dusty mortar bed (the `floor` object). Each brick carries two random attributes that pick its tone, from
   dark red-tan to pale worn beige; large dust patches, scuffs and pits sit on top.
+- Walls in pale cream-grey lime plaster with grey weathering, damp at the foot and a few exposed brick patches.
 - Lighting: sun and sky through the openings, plus eight uplights on the capitals at `UPLIGHT_W` = 120 W each,
-  and a copper conduit along the right wall. With the renders' exposure of 2.6, measured against photo 2, the
-  column and vault come out at the photo's brightness, the floor at about 0.8 of it and the walls at about
-  0.67. The walls are also much more orange than in the photos (red/blue about 2 against 1.3); that is the
-  plaster colour, which has not been changed.
+  and a copper conduit along the right wall.
+- Colour and brightness were matched by measuring the same regions in the photos and in renders from the
+  matching cameras (renders at exposure 2.6). Against photo 2: walls about 0.9 of the photo's brightness, floor
+  0.87, column 1.04, vault 1.04; the walls' red/blue ratio is 1.38 against the photo's 1.26 (against photo 1:
+  walls 0.84, floor 0.95, red/blue 2.06 against 2.0). The photos are phone shots with automatic exposure and
+  processing, so these are targets for the look, not physical measurements.
 - The room is **empty by default**. The chairs, tables and fire extinguishers from the photos are in
   `furniture()`; build with `FURNITURE=1` to get them, in `foresteria_furnished.blend`.
 - Right wall: two arched doorways at y = 18.5 m and 20.1 m (`DOOR_CENTRES`). The first has a plank door with iron straps,
@@ -113,7 +116,7 @@ $B -b --python compare.py
 Blender 5.1 only (it uses 5.1 property names). `walk.py` does not change the .blend on disk. At start-up it:
 
 - builds a second scene, `walk`, that shares all objects with the Cycles scene but has its own world and EEVEE
-  settings (raytracing, Fast GI, AgX, exposure 2.0), so `render.py` and `render_hero.py` still see the Cycles scene as it was;
+  settings (raytracing, Fast GI, AgX, exposure 2.2), so `render.py` and `render_hero.py` still see the Cycles scene as it was;
 - maximises the 3D viewport (Back to Previous, top bar, or Ctrl+Space, gets the normal layout back), Rendered
   shading, overlays and gizmos off, 24 mm lens;
 - puts the eye at the open right-wall doorway (x = 10.65, y = 20.1 m, 1.6 m up) looking down the hall; the door leaf
@@ -137,9 +140,9 @@ Things to know:
   sky only for camera rays (windows and doorways stay bright) and lights everything else with a dim warm fill
   (`fill_color`, `fill_strength` 0.08); the sun and the uplights are the original lamps with real shadows.
   Raytracing with Fast GI adds screen-space bounce light and ambient occlusion on top.
-  After the lighting change (dimmer uplights, exposure 2.6 in Cycles) the walk exposure was re-matched to 2.0 and
-  the fill made less warm: a headless EEVEE render from the hero camera is within 4 % of the Cycles hero's mean
-  brightness, red/blue 2.0 against 1.9. `renders/walk_vs_cycles_F.jpg` is from the earlier lighting. It is darker at the far end wall and has
+  After the lighting and wall changes (dimmer uplights, exposure 2.6 in Cycles, paler plaster) the walk exposure
+  was re-matched to 2.2 and the fill made less warm: a headless EEVEE render from the hero camera is within 2 % of
+  the Cycles hero's mean brightness. `renders/walk_vs_cycles_F.jpg` is from the earlier lighting. It is darker at the far end wall and has
   less smooth bounce gradients, and screen-space effects cannot see what is off-screen, so the ambient shifts a bit as you turn.
 - **Grain while moving.** Raytracing is noisy for a frame or two after the view changes and clears up while you stand
   still (64 samples). I could not watch the viewport in motion, so frame rate and how the grain looks while walking
