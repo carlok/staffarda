@@ -9,6 +9,8 @@ with the walk-mode look of walk.py.
   Blender -b foresteria.blend --python walkthrough.py -- final       1920x1080, 24 fps
   Blender -b foresteria.blend --python walkthrough.py -- plan        only the path diagram and timing, no render
   Blender -b foresteria.blend --python walkthrough.py -- final 2480 2530   only those frames, to test a stretch
+  Blender -b foresteria.blend --python walkthrough.py -- compare [256]   8 key moments as stills, EEVEE vs Cycles
+                                                                         (Cycles samples), into ../tmp/high_compare/
 
 Frames go to video/<preset>/####.png and are skipped if they already exist, so an interrupted render resumes: run the
 same command again (a frame cut off mid-render is redone). While the Mac sleeps nothing renders; Blender just pauses.
@@ -143,6 +145,7 @@ def move_profile(L):
 # ('point', (x, y, z)) or ('dir', yaw_deg, pitch_deg)
 POS = []          # (t0, t1, s0, s1, s_of_t or None)
 GAZE = []
+MARKS = []         # (name, t): moments for the engine comparison stills (-- compare)
 t = 0.0
 
 
@@ -164,13 +167,16 @@ def move_to(route_name):
     return t - T, t
 
 
-def look(dt, spec, hold_after=0.0):
-    """turn the gaze to spec over dt seconds (from now), then keep it hold_after seconds, advancing time"""
+def look(dt, spec, hold_after=0.0, mark=None):
+    """turn the gaze to spec over dt seconds (from now), then keep it hold_after seconds, advancing time.
+    mark names the moment the gaze has settled (end of the hold), for the engine comparison stills."""
     GAZE.append((t + dt, spec))
     hold(dt)                                     # stand still while turning (no gap in the position timeline)
     if hold_after:
         GAZE.append((t + hold_after, spec))
         hold(hold_after)
+    if mark:
+        MARKS.append((mark, t))
 
 
 def time_at_s(s_target):
@@ -195,20 +201,22 @@ AHEAD = ('ahead', 3.0)
 LEVEL = ('ahead', 0.0)
 GAZE.append((0.0, AHEAD))
 hold(2.0)                                                     # standing in the doorway, looking in
+MARKS.append(('doorway', 1.5))
 ta, tb = move_to('S1')
 GAZE.append((time_at_s(S_OF[2]), AHEAD))                      # straight in, past the threshold
 GAZE.append((time_at_s(S_OF[3]), ('point', (S, 21.6, 2.4))))  # column 4 and its capital while rounding it
 GAZE.append((tb, ('point', CAP(4))))
 # stop 1, beyond column 4: up the capital into the ribs, on to the keystone, then across to a window
 look(3.2, ('point', (S, 21.6, 4.8)), 0.8)
-look(3.2, ('point', (2.7, 24.3, 6.4)), 1.2)
+look(3.2, ('point', (2.7, 24.3, 6.4)), 1.2, mark='ribs and keystone')
 ta, tb = move_to('S2')
 GAZE.append((ta + 3.0, LEVEL))
 GAZE.append((time_at_s(S_OF[9]), ('point', (4.2, 18.9, 6.0))))   # up at the vault while crossing between columns
+MARKS.append(('walking under the vault', time_at_s(S_OF[9]) + 1.0))
 GAZE.append((time_at_s(S_OF[10]), AHEAD))
 GAZE.append((tb, LEVEL))
 # stop 2, beside column 3: across to the right wall's doorways and corbel, then down to the column's base
-look(3.2, ('point', (HALL_W, 18.6, 2.0)), 1.0)
+look(3.2, ('point', (HALL_W, 18.6, 2.0)), 1.0, mark='doorways and corbel')
 look(3.2, ('point', (S, 16.2, 0.2)), 0.9)
 ta, tb = move_to('S3')
 GAZE.append((ta + 3.0, LEVEL))
@@ -216,22 +224,22 @@ GAZE.append((time_at_s(S_OF[13]), ('point', (0.0, 13.5, 2.4))))  # a left-wall w
 GAZE.append((time_at_s(S_OF[14]), ('point', (S, 10.8, 2.3))))    # column 2's capital
 GAZE.append((tb, LEVEL))
 # stop 3, beside column 2: the next window with its steps, up to the wall corbel, down to the brick floor
-look(3.2, ('point', (0.0, 8.1, 2.3)), 1.0)
-look(3.2, ('point', (2.6, 8.8, 0.0)), 1.0)
+look(3.2, ('point', (0.0, 8.1, 2.3)), 1.0, mark='window and corbel')
+look(3.2, ('point', (2.6, 8.8, 0.0)), 1.0, mark='brick floor')
 ta, tb = move_to('S4')
 GAZE.append((ta + 3.0, LEVEL))
 GAZE.append((time_at_s(S_OF[17]), ('point', CAP(1))))            # column 1's capital, coming toward it
 GAZE.append((tb, ('ahead', 4.0)))
 # stop 4, beside column 1: up to the near bay's keystone, then down to the broken base
 look(3.2, ('point', (8.1, 2.7, 6.4)), 1.0)
-look(3.5, ('point', (S, 5.4, 0.15)), 0.9)
+look(3.5, ('point', (S, 5.4, 0.15)), 0.9, mark='column 1 base')
 ta, tb = move_to('END')
 T_END_MOVE = ta
 GAZE.append((ta + 3.0, ('point', (0.0, 2.7, 2.3))))        # across the hall to the near-left window while walking
 GAZE.append((tb, ('dir', 180.0, 5.0)))                     # (not at the near end wall, which is only 1 m away)
 # end: turn slowly back past the left-wall windows to the long view down the hall, and stay there
 look(2.0, ('dir', 180.0, 5.0))
-look(4.0, ('dir', 119.0, 8.0), 3.5)
+look(4.0, ('dir', 119.0, 8.0), 3.5, mark='long view')
 T_TOTAL = t
 
 
@@ -392,8 +400,57 @@ print(f'WALKTHROUGH peak turning speed: yaw {PEAK[0]:.1f} deg/s, pitch {PEAK[1]:
 print('WALKTHROUGH clearances (min, m): ' + ', '.join(f'{k} {v:.2f}' for k, v in clearances().items()))
 write_plan(os.path.join(HERE, 'video', 'path_plan.svg'))
 
-if PRESET in PRESETS:
-    P = PRESETS[PRESET]
+def slug(name):
+    return name.replace(' ', '_')
+
+
+def render_compare(sc, cam):
+    """the MARKS moments as stills, EEVEE (as in the video) and Cycles (as the hero render), into ../tmp/high_compare/"""
+    import time
+    out = os.path.normpath(os.path.join(HERE, '..', 'tmp', 'high_compare'))
+    os.makedirs(out, exist_ok=True)
+    samples = int(argv[1]) if len(argv) > 1 else 256
+    shots = [(k + 1, name, int(round(tt * FPS)) + 1) for k, (name, tt) in enumerate(sorted(MARKS, key=lambda m: m[1]))]
+    src = W.source_scene()
+    src.collection.objects.link(cam)
+    src.camera = cam
+    cy = src.cycles
+    src.render.engine = 'CYCLES'
+    cy.samples, cy.use_denoising, cy.use_adaptive_sampling = samples, True, True
+    cy.max_bounces, cy.diffuse_bounces, cy.glossy_bounces, cy.transmission_bounces = 8, 6, 3, 2
+    cy.sample_clamp_indirect, cy.sample_clamp_direct = 8.0, 0.0
+    prefs = bpy.context.preferences.addons['cycles'].preferences
+    prefs.compute_device_type = 'METAL'
+    prefs.get_devices()
+    for d in prefs.devices:
+        d.use = True
+    cy.device = 'GPU'
+    src.view_settings.view_transform, src.view_settings.look, src.view_settings.exposure = 'AgX', 'None', 2.6
+    log = []
+    engines = [e for e in (('eevee', sc), ('cycles', src)) if os.environ.get('COMPARE_ONLY', e[0]) == e[0]]
+    for engine, s_ in engines:
+        s_.render.resolution_x, s_.render.resolution_y, s_.render.resolution_percentage = 1920, 1080, 100
+        s_.render.use_motion_blur, s_.render.motion_blur_shutter = True, 0.5
+        s_.render.image_settings.file_format = 'PNG'
+        s_.render.use_overwrite, s_.render.use_placeholder = True, False
+        for (k, name, f) in shots:
+            # a one-frame animation render: frame_set on a scene that is not the active one does not move the camera
+            s_.frame_start = s_.frame_end = f
+            s_.render.filepath = os.path.join(out, f'{k}_{slug(name)}_{engine}_')
+            t0 = time.time()
+            bpy.ops.render.render(animation=True, scene=s_.name)
+            os.replace(os.path.join(out, f'{k}_{slug(name)}_{engine}_{f:04d}.png'),
+                       os.path.join(out, f'{k}_{slug(name)}_{engine}.png'))
+            log.append(f'{k} {name:24s} frame {f:5d} ({(f - 1) / FPS:6.1f} s)  {engine:6s} {time.time() - t0:6.1f} s')
+            print('COMPARE', log[-1])
+    with open(os.path.join(out, 'timings.txt'), 'a') as fh:
+        fh.write(f'EEVEE: {sc.eevee.taa_render_samples} samples, walk.py look (exposure {sc.view_settings.exposure}).\n'
+                 f'Cycles: {samples} samples, adaptive, denoised, render.py light paths (exposure 2.6).\n'
+                 f'Both 1920x1080 with motion blur (shutter 0.5).\n\n' + '\n'.join(log) + '\n')
+
+
+if PRESET in PRESETS or PRESET == 'compare':
+    P = PRESETS.get(PRESET, PRESETS['final'])
     sc = W.make_walk_scene()
     cd = bpy.data.cameras.new('walkthrough')
     cd.lens, cd.sensor_width, cd.clip_start, cd.clip_end = LENS, 36.0, 0.05, 400.0
@@ -422,6 +479,10 @@ if PRESET in PRESETS:
         for kp in fc.keyframe_points:
             kp.interpolation = 'LINEAR'
     sc.frame_start, sc.frame_end, sc.frame_step = 1, n_frames, P['step']
+    if PRESET == 'compare':
+        sc.eevee.taa_render_samples = P['samples']
+        render_compare(sc, cam)
+        sys.exit(0)
     if len(argv) >= 3:                             # test a stretch: -- final 2470 2520 renders into video/final_2470-2520/
         sc.frame_start, sc.frame_end = int(argv[1]), int(argv[2])
         PRESET = f'{PRESET}_{argv[1]}-{argv[2]}'
