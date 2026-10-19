@@ -1023,12 +1023,13 @@ def springers():
     for j in range(NY + 1):
         pts += [(0.0, j * S, 1), (W, j * S, -1)]
     pts += [(S, 0.0, 2), (S, L, -2)]
+    wb = W_TRANS + 0.02      # 1 cm proud of the arch sides each way: coplanar faces z-fought (flickered) in EEVEE
     for (x, y, k) in pts:
         zs_ = spring_z(x, y)
         if abs(k) == 1:
-            add_box(bm, (x + (0.2 if k > 0 else -0.2), y, zs_ + 0.28), (0.40, 0.56, 0.56))
+            add_box(bm, (x + (0.2 if k > 0 else -0.2), y, zs_ + 0.28), (0.40, wb, 0.56))
         else:
-            add_box(bm, (x, y + (0.2 if k > 0 else -0.2), zs_ + 0.28), (0.56, 0.40, 0.56))
+            add_box(bm, (x, y + (0.2 if k > 0 else -0.2), zs_ + 0.28), (wb, 0.40, 0.56))
     for (x, y, dx, dy) in ((0, 0, 1, 1), (W, 0, -1, 1), (0, L, 1, -1), (W, L, -1, -1)):
         add_box(bm, (x + dx * 0.2, y + dy * 0.2, spring_z(x, y) + 0.28), (0.40, 0.40, 0.56))
     return to_obj('springers', bm, MAT['springer'])

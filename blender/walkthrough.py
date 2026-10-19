@@ -8,6 +8,7 @@ with the walk-mode look of walk.py.
   Blender -b foresteria.blend --python walkthrough.py -- preview     640x360, 12 fps, quick, to check the moves
   Blender -b foresteria.blend --python walkthrough.py -- final       1920x1080, 24 fps
   Blender -b foresteria.blend --python walkthrough.py -- plan        only the path diagram and timing, no render
+  Blender -b foresteria.blend --python walkthrough.py -- final 2480 2530   only those frames, to test a stretch
 
 Frames go to video/<preset>/####.png and are skipped if they already exist, so an interrupted render resumes: run the
 same command again (a frame cut off mid-render is redone). While the Mac sleeps nothing renders; Blender just pauses.
@@ -23,7 +24,7 @@ PRESET = argv[0] if argv else 'plan'
 
 PRESETS = {
     'preview': dict(res=(640, 360), samples=16, step=2),
-    'final': dict(res=(1920, 1080), samples=40, step=1),     # ~8.5 s/frame on this Mac: about 3.7 h; 64 differs by <1 level
+    'final': dict(res=(1920, 1080), samples=40, step=1),     # ~2.4 s/frame on this Mac: about 1.8 h; 64 differs by <1 level
 }
 FPS = 24
 EYE = 1.60            # eye height, m
@@ -421,6 +422,9 @@ if PRESET in PRESETS:
         for kp in fc.keyframe_points:
             kp.interpolation = 'LINEAR'
     sc.frame_start, sc.frame_end, sc.frame_step = 1, n_frames, P['step']
+    if len(argv) >= 3:                             # test a stretch: -- final 2470 2520 renders into video/final_2470-2520/
+        sc.frame_start, sc.frame_end = int(argv[1]), int(argv[2])
+        PRESET = f'{PRESET}_{argv[1]}-{argv[2]}'
     sc.render.fps = FPS
     sc.render.resolution_x, sc.render.resolution_y = P['res']
     sc.render.resolution_percentage = 100

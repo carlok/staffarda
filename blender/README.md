@@ -266,13 +266,19 @@ speed is capped (24 deg/s side to side, 16 deg/s up and down), so the view never
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b foresteria.blend --python walkthrough.py -- plan       # path diagram and timing only
 $B -b foresteria.blend --python walkthrough.py -- preview    # 640x360, 12 fps, ~30 min
-caffeinate -i $B -b foresteria.blend --python walkthrough.py -- final   # 1920x1080, 24 fps, 40 samples, ~5.4 h
+caffeinate -i $B -b foresteria.blend --python walkthrough.py -- final   # 1920x1080, 24 fps, 40 samples, ~1.8 h
+$B -b foresteria.blend --python walkthrough.py -- final 2480 2530       # only frames 2480-2530, into video/final_2480-2530/
 ```
 
 Frames go to `video/<preset>/` and are skipped when they exist, so an interrupted render resumes by running the same
 command again (a frame cut off mid-render is redone). While the Mac sleeps nothing renders; Blender just pauses and
 continues on wake. `caffeinate -i` keeps the Mac from idle-sleeping during the render (closing a laptop lid still
 sleeps it). When all frames exist the script encodes `video/walkthrough_<preset>.mp4` with ffmpeg. Frames and MP4s
-are not tracked in git. Measured on this Mac at 1080p: about 8.5 s per frame at 40 samples (64 samples: 14 s,
-differing by under one 8-bit level on average).
+are not tracked in git. Measured on this Mac at 1080p: about 2.4 s per frame at 40 samples with the GPU to itself
+(8.5 s while other renders shared it; 64 samples differ by under one 8-bit level on average).
+
+The first final render flickered on the brick springer blocks above the wall corbels. Those blocks were exactly as
+wide as the arches springing from them (0.56 m), so their sides were coplanar and EEVEE's depth test picked a
+different winner each frame. The blocks are now 2 cm wider, which hides the arch faces inside them. Raising the
+sample count would not have helped: this was a geometry problem, not noise.
 
