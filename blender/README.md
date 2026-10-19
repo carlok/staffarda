@@ -253,6 +253,8 @@ substitute for a survey and an engineer.
 
 ## Walkthrough video
 
+The published cut is on YouTube: <https://youtu.be/FdIIaSr5uAI>.
+
 `walkthrough.py` renders a visitor's walk at standing eye height (1.6 m), 24 mm lens, about 1 m/s with eased
 starts and stops, a slight head bob and motion blur, in EEVEE with the walk-mode look (`walk.py`). The route
 (`video/path_plan.svg`): in through the open right-wall doorway, round the far side of column 4, then a slalom past
